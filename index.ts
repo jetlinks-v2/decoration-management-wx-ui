@@ -6,6 +6,6 @@ export default {
   id, name, templateCodes, entryPath,
   getRoutes: () => [{
     path: entryPath, name: `${id}:entry`, component: () => import('./mobile/shell/ModuleRoot.vue'),
-    children: ['owner', 'staff'].map(side => ({ path: side, name: `${id}:${side}`, component: () => import('./mobile/shell/SideRoute.vue') })),
+    children: ['owner', 'staff', 'view'].map(side => ({ path: side, name: `${id}:${side}`, component: () => import('./mobile/shell/SideRoute.vue') })),
   }],
 } satisfies MobileAppModule

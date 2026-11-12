@@ -5,8 +5,8 @@ import MobileNotice from './components/ui/MobileNotice.vue'
 import MobileLoading from './components/ui/MobileLoading.vue'
 import SelectField from './components/ui/SelectField.vue'
 
-import {inShell,setShellBack} from './shell/runtime'
-import {onBeforeUnmount,onMounted} from 'vue'
+import {inShell} from './shell/runtime'
+import {useShellNavigation} from './shell/navigation'
 import {computed,ref} from 'vue'
 import {useI18n} from './i18n'
 import {LeftOutlined,ReloadOutlined,HomeOutlined,LogoutOutlined,FileAddOutlined,FileTextOutlined,BellOutlined} from './components/ui/icons'
@@ -34,8 +34,7 @@ const blocked=()=>!!(form.value?.saving||form.value?.uncertain||detail.value?.sa
 const dirty=()=>!!(form.value?.dirty||detail.value?.dirty)
 async function canLeave(){if(blocked())return false;return !dirty()||await confirmDiscard()&&!blocked()}
 const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty())
-onMounted(()=>{if(inShell())setShellBack(()=>{if(['list','history','notifications'].includes(view.value))return false;void back(false);return true})})
-onBeforeUnmount(()=>setShellBack(undefined))
+if(inShell())useShellNavigation('/applications/decoration-app',()=>!['list','history','notifications'].includes(view.value),()=>back(false),canLeave)
 const title=computed(()=>view.value==='create'?'装修申请':view.value==='notifications'?t('Mobile.decorationNotifications'):view.value==='history'?t('Mobile.decorationRecords'):view.value==='workflow'?t('Mobile.workflowTitle'):view.value==='detail'?side==='staff'?'任务办理':detailStep.value==='rectification'?'巡检整改':ownerSteps().find(s=>s.key===detailStep.value)?.title||'装修详情':side==='owner'?t('Mobile.myDecoration'):'装修工作台')
 const ownerRoot=computed(()=>side==='owner'&&['list','history','notifications'].includes(view.value))
 const houseOptions=computed(()=>houses.value.map(home=>({value:home.household.relationshipId,label:`${home.projectName} / ${home.household.spaceName}`})))

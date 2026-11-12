@@ -6,10 +6,10 @@ import MobileLoading from '../components/ui/MobileLoading.vue'
 
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useMobileAppContext, registerMobileAppBack } from '@jetlinks-mobile-core'
+import { useMobileAppContext } from '@jetlinks-mobile-core'
 import { jetlinksMobile } from '../../package.json'
 import BusinessApp from '../App.vue'
-import { bindShell, shellRequest, shellState, shellBack } from './runtime'
+import { bindShell, shellRequest, shellState } from './runtime'
 import { setShellIdentity } from '../transport'
 import { provideDecorationI18n } from '../i18n'
 import { mountBusinessStyles } from './styles'
@@ -20,7 +20,7 @@ const context=useMobileAppContext(),route=useRoute(),root=ref<HTMLElement>(),rea
 const side=computed(()=>route.path.endsWith('/staff')||route.query.side==='staff'?'staff':'owner')
 provideDecorationI18n()
 provide('business-popup-target',computed(()=>root.value||'body'))
-let dispose=()=>{},removeStyles=()=>{},removeBack=()=>{},attempt=0
+let dispose=()=>{},removeStyles=()=>{},attempt=0
 async function start() {
   const own=++attempt; ready.value=false; error.value=''; dispose(); setShellIdentity(undefined)
   dispose=bindShell(context,jetlinksMobile.templateCodes)
@@ -35,8 +35,8 @@ async function start() {
   } catch(cause) {if(own===attempt)error.value=cause instanceof Error?cause.message:'应用加载失败'}
 }
 watch(()=>[context.project.value?.code,context.application.value?.id,context.application.value?.templateCode,side.value],()=>{void start()},{flush:'sync'})
-onMounted(()=>{removeStyles=mountBusinessStyles([mobileCss,businessCss,sharedCss],'decoration-business');removeBack=registerMobileAppBack(shellBack);void start()})
-onBeforeUnmount(()=>{attempt++;removeBack();dispose();setShellIdentity(undefined);removeStyles()})
+onMounted(()=>{removeStyles=mountBusinessStyles([mobileCss,businessCss,sharedCss],'decoration-business');void start()})
+onBeforeUnmount(()=>{attempt++;dispose();setShellIdentity(undefined);removeStyles()})
 
 </script>
 <template>

@@ -12,7 +12,7 @@ pnpm dev:app decoration-app --port 9414
 pnpm build:app decoration-app
 ```
 
-组合产物输出到本仓库 `dist/`，包括统一外壳。业务路由为 `/applications/decoration-app` 及其 `owner`、`staff` 子路由，默认展示业主端。模块只使用 `@jetlinks-mobile-core` 的项目、真实应用、请求及同步 Back 能力；不导入独立登录、根实例或独立凭据。未绑定真实应用、模板不匹配或缺少对应端查询权限时不发业务请求。切换应用/项目/端别或卸载时取消请求并清空页面，不自动重放写操作。
+组合产物输出到本仓库 `dist/`，包括统一外壳。业务路由为 `/applications/decoration-app` 及其 `owner`、`staff` 子路由，默认展示业主端。模块只使用 `@jetlinks-mobile-core` 的项目、真实应用、请求及Vue Router 路由守卫；不导入独立登录、根实例或独立凭据。未绑定真实应用、模板不匹配或缺少对应端查询权限时不发业务请求。切换应用/项目/端别或卸载时取消请求并清空页面，不自动重放写操作。
 
 外壳负责项目 token、租户头及应用资产 Scope。资料上传保留 FormData，私有下载走认证 Blob；401 由外壳处理，403 保留会话。组件按页面局部导入；业务样式只在挂载期间作用于自身根节点。嵌入模式不操作浏览器历史；未保存内容通过 Vant 确认后返回。
 
@@ -33,3 +33,5 @@ npm run build
 `tests/browser.mjs` 使用 Playwright Chrome，默认连接独立开发服务 9413 和官方组合服务 9414；可用 `H5_STANDALONE_URL`、`H5_OFFICIAL_URL` 指定测试地址。执行前分别启动两种入口。
 
 资料模板原件及对应 PDF 保留在 `assets/material-templates/`。在线签署继续使用完整模板和申请冻结信息，附件不得交给外部 Office 服务。真实网关授权、支付/通知以及 APP 真机联调需在对应环境完成。
+
+业务内部页面使用 `/applications/decoration-app/view` 子路由接入外壳现有返回协议；返回逐级办理，并保留未保存确认和提交中离开保护。业主/员工入口保留端标识；根页交由外壳关闭应用。嵌入时只使用宿主内存路由，不访问父页面浏览器历史。

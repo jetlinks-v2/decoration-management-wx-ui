@@ -59,6 +59,18 @@ async function ownerFlow(page,width,embedded){
  await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'继续填写',exact:true}).click()
  await page.getByRole('heading',{name:'装修申请信息',exact:true}).waitFor()
  if(embedded){assert.equal(await page.evaluate(()=>history.length),previous);assert.equal(await page.evaluate(()=>window.__bridgeEvents.find(e=>e.requestId==='form-back')?.handled),true)}
+ // A cancelled native Back keeps the form; page Back must confirm independently.
+ await page.getByRole('button',{name:'返回',exact:true}).click()
+ await page.getByRole('dialog').waitFor()
+ await page.getByRole('button',{name:'放弃修改',exact:true}).click()
+ await page.getByRole('heading',{name:'装修申请信息',exact:true}).waitFor({state:'detached'})
+ if(embedded){
+  await page.evaluate(()=>window.__bridgeListeners.forEach(fn=>fn({channel:'jetlinks.mobile.application',version:1,moduleId:'decoration-app',launchId:'browser-fixture',type:'navigation.back',requestId:'root-back'})))
+  await page.waitForTimeout(100)
+  assert.equal(await page.evaluate(()=>window.__bridgeEvents.find(e=>e.requestId==='root-back')?.handled),false)
+  assert.equal(await page.evaluate(()=>history.length),previous)
+ }
+
 }
 try{
  for(const width of [320,390]){
