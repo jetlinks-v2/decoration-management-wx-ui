@@ -1,0 +1,5 @@
+<script setup lang="ts">
+import {CellGroup as VanCellGroup} from 'vant'
+defineProps<{title?:string}>()
+</script>
+<template><van-cell-group :title="title" class="detail-field-group"><slot /></van-cell-group></template>

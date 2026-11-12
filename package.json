@@ -1,0 +1,51 @@
+{
+  "name": "decoration-management-wx-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "jetlinksMobile": {
+    "id": "decoration-app",
+    "name": "装修管理",
+    "templateCodes": [
+      "DecorationManagement"
+    ],
+    "entry": "index.ts"
+  },
+  "scripts": {
+    "dev": "vite --config vite.mobile.config.ts",
+    "build": "vite build --config vite.mobile.config.ts",
+    "preview": "vite preview --config vite.mobile.config.ts",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.mobile.json",
+    "test": "node tests/run.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "altcha": "3.2.2",
+    "dayjs": "1.11.13",
+    "jsencrypt": "3.3.2",
+    "vue-i18n": "9.14.5",
+    "docx-preview": "0.3.6",
+    "pdfjs-dist": "4.10.38",
+    "xlsx": "0.18.5"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3",
+    "vant": "^4.10.2"
+  },
+  "devDependencies": {
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3",
+    "vant": "^4.10.2",
+    "@vitejs/plugin-vue": "6.0.1",
+    "vite": "7.1.5",
+    "typescript": "5.9.3",
+    "vue-tsc": "3.1.1",
+    "@types/node": "22.18.0",
+    "esbuild": "0.25.12",
+    "playwright": "1.56.1"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

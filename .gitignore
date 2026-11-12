@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-mobile/
+.agent-runtime/
+*.local.*
+.env.local
+.idea/
