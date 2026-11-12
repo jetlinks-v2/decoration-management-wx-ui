@@ -20,12 +20,12 @@ const {useMobileDecoration}=await bundle('../mobile/useMobileDecoration.ts',[{na
  `}))
 }}])
 const flush=async()=>{await nextTick();await new Promise(resolve=>setImmediate(resolve));await nextTick()}
-function mount(side,host,canLeave=()=>true,shouldBlockUnload=()=>false){
+function mount(side,host,canLeave=()=>true,shouldBlockUnload=()=>false,entrySearch){
  globalThis.__mobileHost=host
  const previous={window:globalThis.window,document:globalThis.document,history:globalThis.history}
  globalThis.window=new EventTarget();globalThis.document=new EventTarget();globalThis.history={pushState(){},replaceState(){}}
  const renderer=createRenderer({createElement:()=>({}),createText:()=>({}),createComment:()=>({}),insert(){},remove(){},setText(){},setElementText(){},patchProp(){},parentNode(){},nextSibling(){}})
- let state;const app=renderer.createApp(defineComponent({setup(){state=useMobileDecoration(canLeave,side,shouldBlockUnload);return ()=>h('div')}}));app.mount({})
+ let state;const app=renderer.createApp(defineComponent({setup(){state=useMobileDecoration(canLeave,side,shouldBlockUnload,entrySearch);return ()=>h('div')}}));app.mount({})
  return {state,stop(){app.unmount();Object.assign(globalThis,previous)}}
 }
 function home(id='house',project='project',processing=false){return {household:{relationshipId:id,spaceId:id,customerId:'owner',projectId:project,spaceName:id,customerName:'业主'},projectName:project,applicationCount:processing?1:0,processing}}
@@ -318,4 +318,39 @@ test('通知深链只定位装修与步骤，登录后详情仍经原本人接�
  const owner=mount('owner',host())
  try{await flush();assert.equal(owner.state.view.value,'detail');assert.equal(owner.state.detailId.value,'record');assert.equal(owner.state.detailStep.value,'second');await owner.state.back();await flush();assert.equal(owner.state.current.value.id,'record')}
  finally{owner.stop();globalThis.location=previous}
+})
+
+test('员工通知独立分页并保留项目筛选，通知深链进入具体任务',async()=>{
+ const previous=globalThis.location;globalThis.location={search:'?side=staff&decorationId=record&taskId=task&step=task'}
+ const source=host(),fallback=source.request,queries=[]
+ source.request=async(path,method,body)=>{
+  if(path.endsWith('/tasks/mine/notifications/_query')){queries.push(body);return {data:[{id:'notice',taskId:'task',side:'staff'}],total:11}}
+  return fallback(path,method,body)
+ }
+ const staff=mount('staff',source)
+ try{
+  await flush();assert.equal(staff.state.view.value,'detail');assert.equal(staff.state.taskId.value,'task');assert.equal(staff.state.detailId.value,'record')
+  await staff.state.back();await staff.state.changeProject('project');await staff.state.changeTab('notifications');await flush()
+  assert.equal(staff.state.notices.value[0].taskId,'task');assert.equal(staff.state.total.value,11)
+  assert.ok(queries.at(-1).terms.some(term=>term.column==='projectId'&&term.value==='project'))
+  staff.state.changePage(2);await flush();assert.equal(queries.at(-1).pageIndex,1)
+  await staff.state.changeTab('inspection');await flush();assert.deepEqual(staff.state.notices.value,[])
+ }finally{staff.stop();globalThis.location=previous}
+})
+test('整改通知定位业主整改页面，员工链接不能误入业主详情',async()=>{
+ const {mobileTaskNoticeTarget,mobileNoticeTarget}=await bundle('../utils/mobileEntry.ts')
+ assert.deepEqual(mobileNoticeTarget('?decorationId=record&step=rectification'),{id:'record',step:'rectification'})
+ assert.equal(mobileTaskNoticeTarget('?side=owner&decorationId=record&taskId=task'),undefined)
+ assert.equal(mobileTaskNoticeTarget('?side=staff&decorationId=record'),undefined)
+ const previous=globalThis.location;globalThis.location={search:'?side=staff&decorationId=record&taskId=task&step=task'}
+ const owner=mount('owner',host())
+ try{await flush();assert.equal(owner.state.view.value,'list');assert.equal(owner.state.detailId.value,'')}
+ finally{owner.stop();globalThis.location=previous}
+})
+
+test('宿主通知采用模块路由传入的目标，不受外层网页URL影响',async()=>{
+ const previous=globalThis.location;globalThis.location={search:'?side=owner&decorationId=outer&step=pay'}
+ const staff=mount('staff',host(),()=>true,()=>false,'side=staff&decorationId=record&taskId=task')
+ try{await flush();assert.equal(staff.state.view.value,'detail');assert.equal(staff.state.detailId.value,'record');assert.equal(staff.state.taskId.value,'task')}
+ finally{staff.stop();globalThis.location=previous}
 })

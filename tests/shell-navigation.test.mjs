@@ -73,3 +73,14 @@ test('staff deep link keeps side at the entry, and unmount removes all guards', 
   f.depth.value = 2; await tick()
   assert.equal(f.router.currentRoute.value.path, '/apps')
 })
+
+
+test('owner deep link retains its identity preference after returning to the shell entry', async () => {
+  const f = await fixture('/applications/test-app/owner?decorationId=record&step=rectification')
+  try {
+    assert.equal(f.router.currentRoute.value.path, f.base)
+    assert.equal(f.router.currentRoute.value.query.side, 'owner')
+    assert.equal(f.router.currentRoute.value.query.decorationId, 'record')
+    assert.equal(f.router.currentRoute.value.query.step, 'rectification')
+  } finally { f.app.unmount() }
+})

@@ -4,10 +4,10 @@ import {createDecorationApi} from '../services/decorationApi'
 import {errorText,projectTree,projectTerms} from '../utils/decoration'
 import type {Application,Task,Project,OwnerHouse,OwnerApplicationSummary,DecorationNotice} from '../types/decoration'
 import {transport,resolveContext,host,cancelRequests} from './transport'
-import {mobileNoticeTarget,type MobileSide} from '../utils/mobileEntry'
+import {mobileNoticeTarget,mobileTaskNoticeTarget,type MobileSide} from '../utils/mobileEntry'
 import {staffTerms,ownerProcessingTerms,type StaffTab,type OwnerStep} from './model'
 import {identity} from './session'
-export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:MobileSide='owner',shouldBlockUnload:()=>boolean=()=>false){
+export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:MobileSide='owner',shouldBlockUnload:()=>boolean=()=>false,entrySearch=typeof location==='undefined'?'':location.search){
  const api=createDecorationApi(transport,side==='owner')
  const permissions=ref<Record<string,boolean>>({}),projectId=ref(''),projects=ref<ReturnType<typeof projectTree>>([])
  const houses=ref<OwnerHouse[]>([]),householdId=ref(''),current=ref<Application>(),rectificationCount=ref(0)
@@ -34,7 +34,10 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
   if(invalid.value)return
   const token=++generation;loading.value=true;error.value=''
   try{
-   if(side==='staff'){
+   if(side==='staff'&&staffTab.value==='notifications'){
+    const result=await api.staffNotifications({pageIndex:page.value-1,pageSize:10,terms:projectTerms([],projectId.value),sorts:[{name:'createTime',order:'desc'}]})
+    if(live(token)){notices.value=result.data;total.value=result.total}
+   }else if(side==='staff'){
     const result=await api.myTasks({pageIndex:page.value-1,pageSize:10,terms:projectTerms(staffTerms(staffTab.value),projectId.value)})
     if(live(token)){taskRows.value=result.data;total.value=result.total}
    }else if(view.value==='list'){
@@ -75,10 +78,15 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
     rememberProject();projects.value=projectTree(tree);permissions.value=grants
    }
    if(live(token)){
+    if(side==='staff'&&!entryApplied){
+     entryApplied=true
+     const target=mobileTaskNoticeTarget(entrySearch)
+     if(target){detailId.value=target.id;taskId.value=target.taskId;view.value='detail'}
+    }
     if(side==='owner'&&!entryApplied){
      entryApplied=true
-     const target=typeof location==='undefined'?undefined:mobileNoticeTarget(location.search)
-     if(target){detailId.value=target.id;detailStep.value=target.step;view.value='detail'}
+     const target=mobileNoticeTarget(entrySearch)
+     if(target&&new URLSearchParams(entrySearch).get('side')!=='staff'){detailId.value=target.id;detailStep.value=target.step;view.value='detail'}
     }
     await load()
    }
@@ -120,7 +128,7 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
   // 选择只查询该房屋的轻量在办摘要，复用已加载房屋，避免重复读取公共档案。
   try{await loadProcessing(token)}catch(e){if(live(token))error.value=errorText(e)}finally{if(live(token))loading.value=false}
  }
- async function changeTab(tab:StaffTab){if(!await canLeave()||disposed||invalid.value)return;staffTab.value=tab;page.value=1;taskRows.value=[];void load()}
+ async function changeTab(tab:StaffTab){if(!await canLeave()||disposed||invalid.value)return;staffTab.value=tab;page.value=1;taskRows.value=[];notices.value=[];void load()}
  function externalProject(event:Event){if(side==='staff')resetProject((event as CustomEvent<string>).detail)}
  function created(row:Application){current.value=row;view.value='workflow';ownerTab.value='list';detailId.value=row.id;detailStep.value='overview';if(!inShell())history.replaceState({},'','#workflow');if(house.value){house.value.applicationCount++;house.value.processing=true}void load()}
  async function applicationChanged(row:Application){

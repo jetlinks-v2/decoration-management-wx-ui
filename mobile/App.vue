@@ -22,8 +22,9 @@ import StaffTaskDetail from './components/StaffTaskDetail.vue'
 import {useMobileDecoration} from './useMobileDecoration'
 import {useDiscardConfirm} from '../hooks/decoration/useDiscardConfirm'
 import {mobileSide} from '../utils/mobileEntry'
+import type {DecorationNotice} from '../types/decoration'
 import {ownerSteps,type OwnerStep} from './model'
-const props=defineProps<{standalone?:boolean;loggingOut?:boolean;side?:'owner'|'staff'}>()
+const props=defineProps<{standalone?:boolean;loggingOut?:boolean;side?:'owner'|'staff';entrySearch?:string}>()
 const emit=defineEmits<{logout:[]}>()
 const side=props.side||mobileSide(location.search)
 const {t}=useI18n()
@@ -33,14 +34,16 @@ const confirmDiscard=useDiscardConfirm(()=> '当前有尚未提交的内容，�
 const blocked=()=>!!(form.value?.saving||form.value?.uncertain||detail.value?.saving||detail.value?.uncertain)
 const dirty=()=>!!(form.value?.dirty||detail.value?.dirty)
 async function canLeave(){if(blocked())return false;return !dirty()||await confirmDiscard()&&!blocked()}
-const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty())
+const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty(),props.entrySearch)
 if(inShell())useShellNavigation('/applications/decoration-app',()=>!['list','history','notifications'].includes(view.value),()=>back(false),canLeave)
 const title=computed(()=>view.value==='create'?'装修申请':view.value==='notifications'?t('Mobile.decorationNotifications'):view.value==='history'?t('Mobile.decorationRecords'):view.value==='workflow'?t('Mobile.workflowTitle'):view.value==='detail'?side==='staff'?'任务办理':detailStep.value==='rectification'?'巡检整改':ownerSteps().find(s=>s.key===detailStep.value)?.title||'装修详情':side==='owner'?t('Mobile.myDecoration'):'装修工作台')
 const ownerRoot=computed(()=>side==='owner'&&['list','history','notifications'].includes(view.value))
 const houseOptions=computed(()=>houses.value.map(home=>({value:home.household.relationshipId,label:`${home.projectName} / ${home.household.spaceName}`})))
 function openStep(step:OwnerStep){const id=current.value?.id||detailId.value;if(id)navigate('detail',id,step);else if(step==='apply')navigate('create')}
+function openNotice(notice:DecorationNotice){if(side==='staff'&&notice.taskId)void navigate('detail',notice.decorationId,'overview',notice.taskId);else if(notice.step!=='task')void navigate('detail',notice.decorationId,notice.step)}
 async function signOut(){if(!props.loggingOut&&await canLeave())emit('logout')}
 async function refresh(){if(await canLeave()){if(view.value==='detail')void detail.value?.reload?.();else void load()}}
+defineExpose({canLeave})
 </script>
 <template>
  <van-config-provider><main class="decoration-mobile" :class="[`mobile-${side}`,{'has-owner-tabs':ownerRoot}]">
@@ -54,9 +57,9 @@ async function refresh(){if(await canLeave()){if(view.value==='detail')void deta
    <template v-if="!invalid">
     <div v-if="view==='list'&&side==='staff'" class="mobile-project"><HomeOutlined /><ProjectTreeSelect :value="projectId||undefined" :tree-data="projects" :allow-clear="true" :disabled="loading" placeholder="全部有权项目" @update:value="changeProject" /></div>
     <OwnerHome v-if="view==='list'&&side==='owner'" :houses="houses" :selected-id="householdId" :loading="loading" :failed="!!error" :rows="rows" :page="page" :total="total" @apply="navigate('create')" @refresh="refresh" @open="id=>navigate('workflow',id)" @page="changePage" />
-    <StaffHome v-else-if="view==='list'" :tasks="taskRows" :tab="staffTab" :loading="loading" :total="total" :page="page" @tab="changeTab" @page="changePage" @open="task=>navigate('detail',task.decorationId,'overview',task.id)" />
+    <StaffHome v-else-if="view==='list'" :tasks="taskRows" :notices="notices" :failed="!!error" :tab="staffTab" :loading="loading" :total="total" :page="page" @tab="changeTab" @page="changePage" @notice="openNotice" @open="task=>navigate('detail',task.decorationId,'overview',task.id)" />
     <OwnerRecords v-else-if="view==='history'" :rows="rows" :loading="loading" :failed="!!error" :page="page" :total="total" @open="id=>navigate('workflow',id)" @page="changePage" />
-    <OwnerNotifications v-else-if="view==='notifications'" :rows="notices" :loading="loading" :failed="!!error" :page="page" :total="total" @open="notice=>navigate('detail',notice.decorationId,notice.step)" @page="changePage" />
+    <OwnerNotifications v-else-if="view==='notifications'" :rows="notices" :loading="loading" :failed="!!error" :page="page" :total="total" @open="openNotice" @page="changePage" />
     <OwnerWorkflow v-else-if="view==='workflow'&&current" :current="current" :rectification-count="rectificationCount" :loading="loading" @step="openStep" @rectification="navigate('detail',current.id,'rectification')" />
     <MobileLoading v-else-if="view==='workflow'" :loading="loading" />
     <OwnerApplicationForm v-else-if="view==='create'&&side==='owner'&&household" :key="contextKey+householdId" ref="form" :api="api" :household="household" @submitted="created" />

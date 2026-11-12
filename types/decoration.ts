@@ -8,7 +8,7 @@ export interface Household { projectId: string; spaceId: string; spaceName: stri
 export interface OwnerHouse { household: Household; projectName: string; applicationCount: number; processing: boolean }
 export interface OwnerApplicationSummary { id: string; projectId: string; spaceId: string; number: string; spaceName: string; status: Status; refundStatus: number; createTime: number; actualEndTime?: number; decorationType?: string }
 /** 已提交业务节点的通知快照，不从当前申请状态虚构历史。 */
-export interface DecorationNotice { id:string; decorationId:string; number:string; spaceName:string; title:string; message:string; step:import('../utils/applicationWorkflow').OwnerStep; detailUrl:string; createTime:number }
+export interface DecorationNotice { taskId?:string; side?:'owner'|'staff'; id:string; decorationId:string; number:string; spaceName:string; title:string; message:string; step:import('../utils/applicationWorkflow').OwnerStep|'rectification'|'task'; detailUrl:string; createTime:number }
 export interface MaterialDefinition { id: string; name: string; kind: 'material' | 'drawing'; source: 'upload' | 'sign'; templateFileId?: string; required: boolean; enabled: boolean; sort: number }
 export interface Material { definition: MaterialDefinition; fileIds: string[]; reviewStatus: number; reviewerId?: string; reviewerName?: string; reviewTime?: number; remark?: string; annotatedFileId?: string; annotationSourceFileId?: string; annotations?: ImageMark[] }
 /** 审核表格不携带详情快照；打开详情后再读取完整申请。 */

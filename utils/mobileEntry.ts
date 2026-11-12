@@ -34,8 +34,15 @@ export function mobilePermissions(menus: AuthorizedMenu[]): Record<string, boole
 }
 
 /** 通知链接只定位对象与步骤；会话、归属与数据权限仍由登录和详情接口核验。 */
-export function mobileNoticeTarget(search:string):{id:string;step:import('./applicationWorkflow').OwnerStep}|undefined {
+export function mobileNoticeTarget(search:string):{id:string;step:import('./applicationWorkflow').OwnerStep|'rectification'}|undefined {
   const query=new URLSearchParams(search),id=query.get('decorationId'),step=query.get('step')||'apply'
-  if(!id||!['apply','pay','permit','first','second','refund'].includes(step))return
-  return {id,step:step as import('./applicationWorkflow').OwnerStep}
+  if(!id||!['apply','pay','permit','first','second','refund','rectification'].includes(step))return
+  return {id,step:step as import('./applicationWorkflow').OwnerStep|'rectification'}
+}
+
+/** 员工通知只携带对象定位信息，不将链接作为任务执行授权。 */
+export function mobileTaskNoticeTarget(search:string):{id:string;taskId:string}|undefined {
+ const query=new URLSearchParams(search),id=query.get('decorationId'),taskId=query.get('taskId')
+ if(query.get('side')!=='staff'||!id||!taskId)return
+ return {id,taskId}
 }

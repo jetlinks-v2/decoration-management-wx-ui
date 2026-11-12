@@ -1,6 +1,5 @@
 import { reactive } from 'vue'
 import { SessionError as MobileError } from '../session'
-import { mobileSide } from '../../utils/mobileEntry'
 
 interface RuntimeConfig { applicationId: string; tenantDomain?: string; title: string; apiBase: string }
 export interface Session { token: string; applicationId: string; tenantDomain: string }
@@ -104,10 +103,12 @@ export async function sessionRequest<T>(path: string, method = 'GET', body?: unk
 export async function verifySession(session?: Session, signal?: AbortSignal) {
   const me = await sessionRequest<Authorization>('/authorize/me', 'GET', undefined, { session, signal })
   if (!me.user?.id || !me.permissions?.some(permission =>
-    permission.id === (mobileSide(location.search) === 'staff' ? 'decoration-task' : 'decoration-owner') && permission.actions.includes('query')))
+    ['decoration-task','decoration-owner'].includes(permission.id) && permission.actions.includes('query')))
     throw new MobileError(403, 'Mobile.accessDenied')
-  const path = mobileSide(location.search) === 'staff' ? '/decoration/tasks/mine/_query' : '/decoration/mobile/applications/_query'
-  await sessionRequest(path, 'POST', { pageSize: 1 }, { session, signal })
+  // 入口端别不能代替身份；登录至少要有一个经档案核验的装修身份。
+  const identity = await sessionRequest<{ owner: boolean; staff: boolean }>('/decoration/mobile/identity', 'GET', undefined, { session, signal })
+  if (!identity || typeof identity.owner !== 'boolean' || typeof identity.staff !== 'boolean' || !identity.owner && !identity.staff)
+    throw new MobileError(403, 'Mobile.accessDenied')
   if (!session) authState.authorization = me
   return me
 }

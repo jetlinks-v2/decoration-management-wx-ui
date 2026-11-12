@@ -31,6 +31,7 @@ async function fixture(run) {
     if (url.endsWith('/login/configs')) return ok({ encrypt: { enabled: true, id: 'encrypt-id', publicKey: 'public-key' } })
     if (url.endsWith('/authorize/login')) return ok({ token: 'h5-token' })
     if (url.endsWith('/authorize/me')) return ok(authorization)
+    if (url.endsWith('/decoration/mobile/identity')) return ok({ owner: true, staff: false })
     return ok([])
   }
   globalThis.fetch = async (url, options) => { calls.push({ url, options }); return respond(url, options) }
@@ -149,7 +150,7 @@ test('新版挑战验证：首次403只弹验证，重试携带确认头，授�
       assert.equal(options.headers['X-Access-Token'], 'verified-token')
       return ok(authorization)
     }
-    return ok({})
+    return ok({ owner: true, staff: false })
   })
   const result = login.login()
   await waitFor(() => login.verification.value)
@@ -182,7 +183,7 @@ test('取消安全验证、修改登录输入及重复点击不会创建迟到�
   assert.equal(await attempt, false)
   assert.equal(vm.stored.size, 0)
   vm.respond(url => url.endsWith('/login/configs') ? ok({}) : url.endsWith('/captcha/config') ? ok({ enabled: false })
-    : url.endsWith('/authorize/login') ? new Promise(resolve => { globalThis.finishDecorationLogin = resolve }) : ok(authorization))
+    : url.endsWith('/authorize/login') ? new Promise(resolve => { globalThis.finishDecorationLogin = resolve }) : url.endsWith('/decoration/mobile/identity') ? ok({ owner: true, staff: false }) : ok(authorization))
   attempt = login.login()
   await waitFor(() => globalThis.finishDecorationLogin)
   login.form.username = 'OTHER'
@@ -201,7 +202,7 @@ test('独立登录不要求项目编码，ALTCHA绑定账号上下文且刷新�
   Object.assign(login.form, { username: 'plain-user', password: 'secret' })
   vm.respond(url => url.endsWith('/login/configs') ? ok({}) : url.endsWith('/captcha/config')
     ? ok({ enabled: true, type: 'altcha', loginWithVerify: false, altcha: { contextUrl: '/captcha/context' } })
-    : url.endsWith('/captcha/context') ? ok({ contextToken: 'context' }) : url.endsWith('/authorize/login') ? ok({ token: 'altcha-token' }) : ok(authorization))
+    : url.endsWith('/captcha/context') ? ok({ contextToken: 'context' }) : url.endsWith('/authorize/login') ? ok({ token: 'altcha-token' }) : url.endsWith('/decoration/mobile/identity') ? ok({ owner: true, staff: false }) : ok(authorization))
   const attempt = login.login()
   await waitFor(() => login.verification.value)
   assert.equal(login.verification.value.contextToken, 'context')
@@ -249,18 +250,23 @@ test('验证弹窗使用真实验证接口交换确认凭证，并拒绝过期AL
 }))
 
 
-test('两端分别核验资源与可信业务身份；非员工不能因有菜单而进入员工工作台', () => fixture(async vm => {
+test('登录核验可信业务身份，端别参数不能代替员工档案；双身份留给业务入口选择', () => fixture(async vm => {
   globalThis.location.search = '?applicationScope=decoration-app&side=staff'
   await vm.initializeConfig()
   const session = { token: 'candidate', applicationId: 'decoration-app', tenantDomain: 'CQHT' }
-  vm.respond(() => ok(authorization))
-  await assert.rejects(vm.verifySession(session), error => error.status === 403)
-  vm.respond(url => url.endsWith('/authorize/me') ? ok({ user: { id: 'not-staff' }, permissions: [{ id: 'decoration-task', actions: ['query'] }] }) : failed(403))
-  await assert.rejects(vm.verifySession(session), error => error.message === 'Mobile.accessDenied')
-  assert.ok(vm.calls.some(call => call.url.endsWith('/decoration/tasks/mine/_query')))
+  for (const result of [{ owner:false, staff:false }, [], { owner:'true', staff:false }]) {
+    vm.respond(url => url.endsWith('/authorize/me') ? ok(authorization) : ok(result))
+    await assert.rejects(vm.verifySession(session), error => error.status === 403)
+  }
+  vm.respond(url => url.endsWith('/authorize/me') ? ok(authorization) : failed(503))
+  await assert.rejects(vm.verifySession(session), error => error.status === 503)
+  for (const result of [{ owner:true, staff:false }, { owner:false, staff:true }, { owner:true, staff:true }]) {
+    vm.respond(url => url.endsWith('/authorize/me') ? ok(authorization) : ok(result))
+    assert.equal((await vm.verifySession(session)).user.id, 'employee')
+  }
+  assert.ok(vm.calls.some(call => call.url.endsWith('/decoration/mobile/identity')))
+  assert.equal(vm.calls.some(call => call.url.endsWith('/decoration/tasks/mine/_query')), false)
   assert.equal(vm.authState.session, undefined)
-  vm.respond(url => url.endsWith('/authorize/me') ? ok({ user: { id: 'staff' }, permissions: [{ id: 'decoration-task', actions: ['query'] }] }) : ok({ data: [], total: 0 }))
-  assert.equal((await vm.verifySession(session)).user.id, 'staff')
 }))
 
 test('独立会话上传保持multipart，下载支持blob；旧下载晚到不泄漏给新账号', () => fixture(async vm => {

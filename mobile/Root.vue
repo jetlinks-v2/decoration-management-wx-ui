@@ -5,7 +5,7 @@ import MobileLoading from './components/ui/MobileLoading.vue'
 
 import { reactive } from 'vue'
 import { useI18n } from './i18n'
-import App from './App.vue'
+import App from './BusinessEntry.vue'
 import LoginPage from './auth/LoginPage.vue'
 import { authState } from './auth/session'
 import { useMobileAuth } from './auth/useMobileAuth'

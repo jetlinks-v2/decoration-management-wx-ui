@@ -2,7 +2,7 @@ import type {Task, Term, Household} from '../types/decoration'
 export {ownerSteps} from '../utils/applicationWorkflow'
 export {isCompletedWorkflow} from '../utils/decoration'
 export type {OwnerStep,StepState,WorkflowStep} from '../utils/applicationWorkflow'
-export type StaffTab='inspection'|'acceptance'|'history'
+export type StaffTab='inspection'|'acceptance'|'history'|'notifications'
 /** 仅二验通过并退款成功才办结；条件下推摘要查询，列表不读取详情。 */
 export function ownerProcessingTerms(home:Household):Term[]{
  return [

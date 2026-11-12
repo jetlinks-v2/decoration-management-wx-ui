@@ -9,6 +9,7 @@ export function createDecorationApi(transport: Transport, mine: boolean) {
     mine,
     ownerHouses: () => call<OwnerHouse[]>('/decoration/mobile/applications/_houses'),
     ownerApplications: (query: Query) => call<Page<OwnerApplicationSummary>>('/decoration/mobile/applications/_summaries', 'POST', query),
+    staffNotifications: (query:Query) => call<Page<DecorationNotice>>('/decoration/tasks/mine/notifications/_query','POST',query),
     ownerNotifications: (query:Query) => call<Page<DecorationNotice>>('/decoration/mobile/applications/_notifications/_query','POST',query),
     projects: () => call<Project[]>('/decoration/directory/projects'),
     households: (project: string) => call<Household[]>(`/decoration/directory/${mine ? 'mine/' : ''}households/${encode(project)}`),

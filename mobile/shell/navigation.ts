@@ -29,7 +29,7 @@ export function useShellNavigation(base: string, internal: () => boolean, back: 
   }
   const stop = watch(internal, sync, { flush: 'sync' })
   // Existing /owner and /staff links remain valid, with side retained at the entry path.
-  if (route.path !== base) void router.replace({ path: base, query: { ...route.query, ...(route.path.endsWith('/staff') ? { side: 'staff' } : {}) } }).then(sync)
+  if (route.path !== base) void router.replace({ path: base, query: { ...route.query, ...(route.path.endsWith('/staff') ? { side: 'staff' } : route.path.endsWith('/owner') ? { side: 'owner' } : {}) } }).then(sync)
   else sync()
   onScopeDispose(() => { disposed = true; stop(); removeGuard() })
 }

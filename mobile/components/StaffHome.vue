@@ -8,14 +8,17 @@ import { useI18n } from '../i18n'
 const { t } = useI18n()
 import staffScene from '../assets/staff-scene.svg'
 import {RightOutlined,EnvironmentOutlined,ClockCircleOutlined} from './ui/icons'
-import type {Task} from '../../types/decoration'
+import OwnerNotifications from './OwnerNotifications.vue'
+import type {DecorationNotice,Task} from '../../types/decoration'
 import {taskNames,taskStates,dateText,type StaffTab} from '../model'
-defineProps<{tasks:Task[];tab:StaffTab;loading:boolean;total:number;page:number}>()
-const emit=defineEmits<{tab:[StaffTab];open:[Task];page:[number]}>()
+defineProps<{tasks:Task[];tab:StaffTab;loading:boolean;total:number;page:number;notices:DecorationNotice[];failed:boolean}>()
+const emit=defineEmits<{tab:[StaffTab];open:[Task];page:[number];notice:[DecorationNotice]}>()
 </script>
 <template>
  <section class="decoration-hero decoration-hero--staff"><div><span class="hero-eyebrow">{{t('Mobile.staffSide')}}</span><h2>{{t('Mobile.staffHeroTitle')}}</h2><p>{{t('Mobile.staffHeroHint')}}</p></div><img :src="staffScene" alt="" width="320" height="240" /></section>
- <div class="staff-tabs" role="tablist"><van-button v-for="item in [{key:'inspection',name:'巡检任务'},{key:'acceptance',name:'验收任务'},{key:'history',name:'历史记录'}]" :key="item.key" role="tab" :aria-selected="tab===item.key" :class="{selected:tab===item.key}" @click="emit('tab',item.key as StaffTab)">{{item.name}}</van-button></div>
+ <div class="staff-tabs" role="tablist"><van-button v-for="item in [{key:'inspection',name:'巡检任务'},{key:'acceptance',name:'验收任务'},{key:'history',name:'历史记录'},{key:'notifications',name:'任务通知'}]" :key="item.key" role="tab" :aria-selected="tab===item.key" :class="{selected:tab===item.key}" @click="emit('tab',item.key as StaffTab)">{{item.name}}</van-button></div>
+ <OwnerNotifications v-if="tab==='notifications'" :rows="notices" :loading="loading" :failed="failed" :page="page" :total="total" staff @open="emit('notice',$event)" @page="emit('page',$event)" />
+ <template v-else>
  <div class="mobile-section-heading"><h2>{{tab==='history'?'我的办理记录':'我的待办'}}</h2><span class="muted">{{total}} 项</span></div>
  <MobileLoading :loading="loading"><van-empty v-if="!tasks.length&&!loading" :description="tab==='history'?'暂无办理记录':'当前没有待办任务'" />
   <article v-for="task in tasks" :key="task.id" class="mobile-surface staff-task" role="button" tabindex="0" @click="emit('open',task)" @keydown.enter="emit('open',task)">
@@ -25,4 +28,5 @@ const emit=defineEmits<{tab:[StaffTab];open:[Task];page:[number]}>()
   </article>
  </MobileLoading>
  <van-pagination v-if="total>10" :model-value="page" :total="total" :items-per-page="10" simple @change="emit('page',$event)" />
+ </template>
 </template>
