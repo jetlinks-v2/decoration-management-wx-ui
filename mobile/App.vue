@@ -7,7 +7,7 @@ import SelectField from './components/ui/SelectField.vue'
 
 import {inShell} from './shell/runtime'
 import {useShellNavigation} from './shell/navigation'
-import {computed,ref} from 'vue'
+import {computed,inject,ref,watch} from 'vue'
 import {useI18n} from './i18n'
 import {LeftOutlined,ReloadOutlined,HomeOutlined,LogoutOutlined,FileAddOutlined,FileTextOutlined,BellOutlined} from './components/ui/icons'
 import ProjectTreeSelect from '../components/decoration/ProjectTreeSelect.vue'
@@ -35,6 +35,8 @@ const blocked=()=>!!(form.value?.saving||form.value?.uncertain||detail.value?.sa
 const dirty=()=>!!(form.value?.dirty||detail.value?.dirty)
 async function canLeave(){if(blocked())return false;return !dirty()||await confirmDiscard()&&!blocked()}
 const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty(),props.entrySearch)
+const scrollTop=inject('business-scroll-top',()=>{})
+watch([view,detailId,taskId,detailStep],scrollTop,{flush:'post'})
 if(inShell())useShellNavigation('/applications/decoration-app',()=>!['list','history','notifications'].includes(view.value),()=>back(false),canLeave)
 const title=computed(()=>view.value==='create'?'装修申请':view.value==='notifications'?t('Mobile.decorationNotifications'):view.value==='history'?t('Mobile.decorationRecords'):view.value==='workflow'?t('Mobile.workflowTitle'):view.value==='detail'?side==='staff'?'任务办理':detailStep.value==='rectification'?'巡检整改':ownerSteps().find(s=>s.key===detailStep.value)?.title||'装修详情':side==='owner'?t('Mobile.myDecoration'):'装修工作台')
 const ownerRoot=computed(()=>side==='owner'&&['list','history','notifications'].includes(view.value))
@@ -48,9 +50,10 @@ defineExpose({canLeave})
 <template>
  <van-config-provider><main class="decoration-mobile" :class="[`mobile-${side}`,{'has-owner-tabs':ownerRoot}]">
   <header class="mobile-header" :class="{'owner-home-header':side==='owner'&&view==='list'}">
-   <template v-if="side==='owner'&&view==='list'"><HomeOutlined class="owner-header-home" /><SelectField class="owner-header-select" :model-value="householdId||undefined" :options="houseOptions" show-search option-filter-prop="label" clearable :loading="loading" :disabled="invalid||loading||!houses.length" :aria-label="t('Mobile.selectHouse')" :placeholder="t('Mobile.selectHouse')" @update:model-value="value=>changeHouse(typeof value==='string'?value:undefined)" /><van-button v-if="standalone" plain :aria-label="t('Mobile.logout')" :title="t('Mobile.logout')" :loading="loggingOut" @click="signOut"><LogoutOutlined /></van-button><van-button v-else plain :aria-label="t('Mobile.refresh')" @click="refresh"><ReloadOutlined /></van-button></template>
-   <template v-else><van-button plain aria-label="返回" @click="back()"><LeftOutlined /></van-button><h1>{{title}}</h1><van-button v-if="!invalid&&view!=='create'" plain aria-label="刷新" @click="refresh"><ReloadOutlined /></van-button><span v-else class="header-spacer" /></template>
+   <template v-if="side==='owner'&&view==='list'"><HomeOutlined class="owner-header-home" /><SelectField class="owner-header-select" :model-value="householdId||undefined" :options="houseOptions" show-search option-filter-prop="label" clearable :loading="loading" :disabled="invalid||loading||!houses.length" :aria-label="t('Mobile.selectHouse')" :placeholder="t('Mobile.selectHouse')" @update:model-value="value=>changeHouse(typeof value==='string'?value:undefined)" /><van-button v-if="standalone" class="header-action" plain :aria-label="t('Mobile.logout')" :title="t('Mobile.logout')" :loading="loggingOut" @click="signOut"><LogoutOutlined /></van-button><van-button v-else class="header-action" plain :aria-label="t('Mobile.refresh')" @click="refresh"><ReloadOutlined /></van-button></template>
+   <template v-else><van-button class="header-action" plain aria-label="返回" @click="back()"><LeftOutlined /></van-button><h1>{{title}}</h1><van-button v-if="!invalid&&view!=='create'" class="header-action" plain aria-label="刷新" @click="refresh"><ReloadOutlined /></van-button><span v-else class="header-spacer" /></template>
   </header>
+  <slot name="identity" />
   <div class="mobile-content">
    <div v-if="standalone&&!ownerRoot" class="mobile-account"><span>{{side==='staff'?'员工端':'业主端'}}</span><van-button plain size="small" :loading="loggingOut" @click="signOut"><LogoutOutlined />退出登录</van-button></div>
    <MobileNotice v-if="error" type="error" :message="error" show-icon><template #action><van-button v-if="!invalid" @click="start">重试</van-button></template></MobileNotice>
@@ -74,3 +77,24 @@ defineExpose({canLeave})
   </nav>
  </main></van-config-provider>
 </template>
+
+<style scoped>
+.mobile-header .header-action {
+ width: 42px;
+ height: 42px;
+ flex-shrink: 0;
+ padding: 0;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ border: 0;
+ border-radius: 50%;
+ background: transparent;
+ color: var(--mobile-text);
+ box-shadow: none;
+}
+.header-action :deep(.van-button__text) { display: flex; align-items: center; justify-content: center; }
+.header-action :deep(.van-icon) { font-size: 20px; line-height: 1; }
+.header-action:active { background: #dfeeff; }
+.header-action:focus-visible { outline: 2px solid var(--mobile-blue); outline-offset: -4px; }
+</style>

@@ -44,8 +44,10 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
     // 首页由服务端返回全部本人房屋及按房聚合的申请数，不按项目逐次切换或请求详情。
     const result=await api.ownerHouses();if(live(token)){
      houses.value=result
-     // 房屋选择限定首页在办申请及新增；记录页不受影响。
-     if(householdId.value&&!result.some(home=>home.household.relationshipId===householdId.value)){householdId.value='';projectId.value=''}
+     // 首次进入或原房屋失效时选首个本人房屋；刷新保留有效选择，记录和通知仍查询全部房屋。
+     const selected=result.find(home=>home.household.relationshipId===householdId.value)||result[0]
+     if(householdId.value!==(selected?.household.relationshipId||''))page.value=1
+     householdId.value=selected?.household.relationshipId||'';projectId.value=selected?.household.projectId||''
     }
     if(live(token))await loadProcessing(token)
    }else if(view.value==='notifications'){
@@ -97,8 +99,9 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
   if((next==='create'&&(side!=='owner'||loading.value||!!error.value||!household.value||house.value?.processing))||!await canLeave()||disposed||invalid.value)return
   if(next==='create'){
    // 首页可能停留期间被PC或其他业主发起申请，进入填表前以最新房屋占用结果核验。
-   const token=generation+1;await load()
-   if(!live(token)||error.value||!household.value||house.value?.processing)return
+   const selectedId=householdId.value,token=generation+1;await load()
+   // 撤权后首页可回退首房，但不能把原房屋的申请动作自动转到另一房屋。
+   if(!live(token)||error.value||!household.value||householdId.value!==selectedId||house.value?.processing)return
   }
   cancelRequests();generation++;loading.value=false;error.value=''
   if(next==='workflow'&&id!==detailId.value){current.value=undefined;rectificationCount.value=0}

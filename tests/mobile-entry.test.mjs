@@ -74,7 +74,7 @@ test('员工端读取员工接口及当前操作授权，不能进入业主新�
 })
 test('业主端继续读取本人接口，不获取员工授权；员工授权失败不查询业务数据',async()=>{
  const source=host(),owner=mount('owner',source)
- try{await flush();assert.equal(owner.state.api.mine,true);assert.ok(source.paths.includes('/decoration/mobile/applications/_houses'));assert.equal(source.paths.some(path=>path.endsWith('/projects')),false);assert.equal(owner.state.household.value,undefined);assert.deepEqual(source.grants,[])}finally{owner.stop()}
+ try{await flush();assert.equal(owner.state.api.mine,true);assert.ok(source.paths.includes('/decoration/mobile/applications/_houses'));assert.equal(source.paths.some(path=>path.endsWith('/projects')),false);assert.equal(owner.state.household.value.spaceId,'house');assert.deepEqual(source.grants,[])}finally{owner.stop()}
  const failed=host();failed.permissions=async()=>{throw new Error('授权服务不可用')}
  const staff=mount('staff',failed)
  try{await flush();assert.deepEqual(staff.state.permissions.value,{});assert.match(staff.state.error.value,/授权服务不可用/);assert.equal(failed.paths.some(path=>path.endsWith('/_query')),false)}finally{staff.stop()}
@@ -127,7 +127,9 @@ test('首页选房后留在首页，申请带入房屋，记录独立查询本�
  }
  const owner=mount('owner',source)
  try{
-  await flush();await owner.state.navigate('create');assert.equal(owner.state.view.value,'list')
+  await flush();assert.equal(owner.state.household.value.spaceId,'one');assert.deepEqual(queries[0].terms,ownerProcessingTerms(home('one','p1').household))
+  await owner.state.navigate('create');assert.equal(owner.state.view.value,'create')
+  await owner.state.back();await flush();queries.length=0
   await owner.state.changeHouse('two');await flush()
   assert.equal(owner.state.view.value,'list');assert.equal(owner.state.household.value.spaceId,'two');assert.equal(queries.length,1);assert.deepEqual(queries[0].terms,ownerProcessingTerms(home('two','p2').household))
   await owner.state.navigate('create');assert.equal(owner.state.view.value,'create');assert.equal(owner.state.household.value.projectId,'p2')
@@ -146,13 +148,13 @@ test('无需选房可查看装修记录，离开后晚到响应不覆盖首页',
  const source=host(),fallback=source.request,queries=[]
  let release;const waiting=new Promise(resolve=>release=resolve)
  source.request=async(path,method,body)=>{
-  if(path.endsWith('/_summaries')){queries.push(body);await waiting;return {data:[{id:'record'}],total:1}}
+  if(path.endsWith('/_summaries')){queries.push(body);if(queries.length===1){await waiting;return {data:[{id:'stale'}],total:1}}return {data:[],total:0}}
   return fallback(path,method,body)
  }
  const owner=mount('owner',source)
  try{
   await flush();await owner.state.navigate('history');await flush()
-  assert.equal(owner.state.household.value,undefined);assert.deepEqual(queries[0].terms,[])
+  assert.equal(owner.state.household.value.spaceId,'house');assert.deepEqual(queries.at(-1).terms,[])
   await owner.state.back();await flush();release();await flush()
   assert.equal(owner.state.view.value,'list');assert.deepEqual(owner.state.rows.value,[])
  }finally{release();owner.stop()}
@@ -273,8 +275,8 @@ test('申请页加载轻量在办摘要，点开进入流程并返回原选房�
  }
  const owner=mount('owner',source)
  try{
-  await flush();assert.equal(queries.length,0)
-  await owner.state.changeHouse('house');await flush()
+  await flush();assert.equal(queries.length,1);assert.equal(owner.state.householdId.value,'house')
+  assert.deepEqual(queries[0].terms,ownerProcessingTerms(home().household))
   assert.deepEqual(owner.state.rows.value.map(row=>row.id),['record'])
   assert.equal(source.paths.filter(path=>path.endsWith('/_houses')).length,1)
   assert.equal(source.paths.some(path=>path.endsWith('/record')),false)
@@ -353,4 +355,39 @@ test('宿主通知采用模块路由传入的目标，不受外层网页URL影�
  const staff=mount('staff',host(),()=>true,()=>false,'side=staff&decorationId=record&taskId=task')
  try{await flush();assert.equal(staff.state.view.value,'detail');assert.equal(staff.state.detailId.value,'record');assert.equal(staff.state.taskId.value,'task')}
  finally{staff.stop();globalThis.location=previous}
+})
+
+
+test('业主默认首个房屋，刷新保留有效选择，撤权后回退首个，无房屋时清空且不查询摘要',async()=>{
+ const source=host(),fallback=source.request,queries=[]
+ let available=[home('one','p1'),home('two','p2')]
+ source.request=async(path,method,body)=>{
+  if(path.endsWith('/_houses'))return available
+  if(path.endsWith('/_summaries')){queries.push(body);return {data:[],total:0}}
+  return fallback(path,method,body)
+ }
+ const owner=mount('owner',source)
+ try{
+  await flush();assert.equal(owner.state.householdId.value,'one');assert.equal(owner.state.projectId.value,'p1')
+  assert.deepEqual(queries.at(-1).terms,ownerProcessingTerms(home('one','p1').household))
+  await owner.state.changeHouse('two');await owner.state.load();assert.equal(owner.state.householdId.value,'two')
+  available=[home('one','p1')];owner.state.changePage(3);await flush();await owner.state.load()
+  assert.equal(owner.state.householdId.value,'one');assert.equal(owner.state.projectId.value,'p1');assert.equal(owner.state.page.value,1)
+  assert.equal(queries.at(-1).pageIndex,0)
+  available=[];const before=queries.length;await owner.state.load()
+  assert.equal(owner.state.household.value,undefined);assert.equal(owner.state.projectId.value,'');assert.equal(queries.length,before)
+ }finally{owner.stop()}
+})
+
+
+test('进入新增前房屋撤权时回退首房，但不将申请自动转到其他房屋',async()=>{
+ const source=host(),fallback=source.request
+ let available=[home('one','p1'),home('two','p2')]
+ source.request=async(path,method,body)=>path.endsWith('/_houses')?available:fallback(path,method,body)
+ const owner=mount('owner',source)
+ try{
+  await flush();await owner.state.changeHouse('two');available=[home('one','p1')]
+  await owner.state.navigate('create');assert.equal(owner.state.view.value,'list');assert.equal(owner.state.householdId.value,'one')
+  await owner.state.navigate('create');assert.equal(owner.state.view.value,'create')
+ }finally{owner.stop()}
 })

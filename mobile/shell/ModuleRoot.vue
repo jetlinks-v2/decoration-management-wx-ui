@@ -13,6 +13,7 @@ import { bindShell, shellRequest, shellState } from './runtime'
 import { setShellIdentity } from '../transport'
 import { provideDecorationI18n } from '../i18n'
 import { mountBusinessStyles } from './styles'
+import {mountBusinessViewport} from './viewport'
 import businessCss from '../style.css?inline'
 import sharedCss from '../../components/decoration/decoration.css?inline'
 import mobileCss from '../components/ui/mobile.css?inline'
@@ -27,7 +28,11 @@ const entrySearch=computed(()=>{
 })
 provideDecorationI18n()
 provide('business-popup-target',computed(()=>root.value||'body'))
-let dispose=()=>{},removeStyles=()=>{},attempt=0
+const scroll=ref<HTMLElement>()
+const scrollTop=()=>scroll.value?.scrollTo(0,0)
+provide('business-scroll-top',scrollTop)
+watch(()=>route.path,scrollTop,{flush:'post'})
+let dispose=()=>{},removeStyles=()=>{},removeViewport=()=>{},attempt=0
 async function start() {
   const own=++attempt; ready.value=false; error.value=''; dispose(); setShellIdentity(undefined)
   dispose=bindShell(context,jetlinksMobile.templateCodes)
@@ -42,20 +47,42 @@ async function start() {
   } catch(cause) {if(own===attempt)error.value=cause instanceof Error?cause.message:'应用加载失败'}
 }
 watch(()=>[context.project.value?.code,context.application.value?.id,context.application.value?.templateCode,side.value,entrySearch.value],()=>{void start()},{flush:'sync'})
-onMounted(()=>{removeStyles=mountBusinessStyles([mobileCss,businessCss,sharedCss],'decoration-business');void start()})
-onBeforeUnmount(()=>{attempt++;dispose();setShellIdentity(undefined);removeStyles()})
+onMounted(()=>{removeViewport=mountBusinessViewport(root.value!);removeStyles=mountBusinessStyles([mobileCss,businessCss,sharedCss],'decoration-business');void start()})
+onBeforeUnmount(()=>{attempt++;dispose();setShellIdentity(undefined);removeStyles();removeViewport()})
 
 </script>
 <template>
-  <section ref="root" class="decoration-business official-module" style="--h5-app-safe-top:0px;--h5-app-safe-bottom:env(safe-area-inset-bottom,0px)">
+  <section ref="root" class="decoration-business official-module"><div ref="scroll" class="business-scroll">
     <van-config-provider>
       <van-empty v-if="error||shellState.error" :description="error||shellState.error"><van-button v-if="!shellState.error" @click="start">重新加载</van-button></van-empty>
       <BusinessApp v-else-if="ready" :key="generation" :side="side" :entry-search="entrySearch" />
       <MobileLoading v-else text="正在连接应用"><div style="height:80px" /></MobileLoading>
     </van-config-provider>
-  </section>
+  </div></section>
 </template>
 
+
 <style scoped>
-.official-module :deep(.decoration-mobile){min-height:0;max-width:none}
+
+/* 宿主负责安全区和关闭栏，业务的粘性顶栏、固定操作区和弹窗限制在应用区域内。 */
+.official-module {
+  position: relative;
+  isolation: isolate;
+  contain: layout paint;
+  height: var(--business-viewport-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  --h5-app-safe-top: 0px;
+  --h5-app-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+.business-scroll {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.official-module :deep(.decoration-mobile) { min-height: 100%; max-width: none; padding-top: 0; padding-bottom: 0; }
+.official-module :deep(.van-config-provider) { min-height: 100%; }
+.official-module :deep(.van-popup) { max-height: 100%; }
+.official-module :deep(.van-dialog) { top: 50%; max-height: 100%; overflow-y: auto; }
 </style>
