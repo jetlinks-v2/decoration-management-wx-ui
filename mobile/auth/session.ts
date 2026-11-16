@@ -24,7 +24,13 @@ export async function initializeConfig() {
   const params = new URLSearchParams(location.search), entries=params.getAll('applicationScope')
   if(entries.length!==1||!/^[a-zA-Z0-9_-]{1,128}$/.test(entries[0]||'')||params.has('token')||params.has('access_token'))throw new MobileError(400,'请从具体应用入口打开此页面')
   config.applicationId=entries[0]!
-  config.tenantDomain=''
+  // 租户来自同源部署配置；不从账号后缀、应用 ID 或 URL 猜测。
+  if (config.tenantDomain !== undefined && typeof config.tenantDomain !== 'string')
+    throw new MobileError(400, 'Mobile.loginConfigFailed')
+  const tenantDomain = config.tenantDomain?.trim() || ''
+  if (tenantDomain && !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(tenantDomain))
+    throw new MobileError(400, 'Mobile.loginConfigFailed')
+  config.tenantDomain=tenantDomain
   const api = typeof config.apiBase === 'string' ? config.apiBase : ''
   if (!api.startsWith('/') || api.startsWith('//') || /[\\?#]/.test(api)
     || new URL(api, location.origin).origin !== location.origin)
@@ -34,7 +40,7 @@ export async function initializeConfig() {
   try {
     const stored = JSON.parse(sessionStorage.getItem(KEY) || 'null') as Session | null
     if (stored && typeof stored.token === 'string' && stored.token.trim()
-      && stored.applicationId === config.applicationId && typeof stored.tenantDomain === 'string')
+      && stored.applicationId === config.applicationId && stored.tenantDomain === tenantDomain)
       setSession(stored)
     else sessionStorage.removeItem(KEY)
   } catch { sessionStorage.removeItem(KEY) }

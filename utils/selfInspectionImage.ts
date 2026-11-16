@@ -15,7 +15,7 @@ export async function selfInspectionImage(snapshot:SelfInspectionSnapshot,signat
   ctx.fillStyle='#f5f7fa';ctx.fillRect(60,y,880,rowHeight)
   ctx.strokeStyle='#b7bec7';ctx.lineWidth=1;ctx.strokeRect(60,y,880,tableHeight)
   ctx.beginPath();ctx.moveTo(620,y);ctx.lineTo(620,y+tableHeight);ctx.stroke()
-  ctx.fillStyle='#202020';ctx.font='bold 24px sans-serif';ctx.fillText('检测项目',85,y+30);ctx.fillText(group.optionTitle,655,y+30)
+  ctx.fillStyle='#202020';ctx.font='bold 24px sans-serif';ctx.fillText(group.title,85,y+30,510);ctx.fillText(group.optionTitle,655,y+30)
   ctx.font='24px sans-serif'
   group.items.forEach((item,index)=>{
    const top=y+(index+1)*rowHeight

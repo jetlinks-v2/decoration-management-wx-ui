@@ -2,7 +2,8 @@ import type {Task, Term, Household} from '../types/decoration'
 export {ownerSteps} from '../utils/applicationWorkflow'
 export {isCompletedWorkflow} from '../utils/decoration'
 export type {OwnerStep,StepState,WorkflowStep} from '../utils/applicationWorkflow'
-export type StaffTab='inspection'|'acceptance'|'history'|'notifications'
+export type StaffTaskTab='all'|'inspection'|'acceptance'
+export type StaffTab=StaffTaskTab|'history'|'notifications'
 /** 仅二验通过并退款成功才办结；条件下推摘要查询，列表不读取详情。 */
 export function ownerProcessingTerms(home:Household):Term[]{
  return [
@@ -19,6 +20,8 @@ export const taskStates:Record<string,string>={pending:'待办理',completed:'�
 /** 固定工作台条件与项目/搜索分开AND，服务端另注入本人资格与数据范围。 */
 export function staffTerms(tab:StaffTab):Term[]{
  if(tab==='history')return [{column:'status',termType:'nin',value:['pending','waiting_review']},{column:'kind',termType:'nin',value:['daily']}]
+ // 全部待办合并巡检、整改复核及两类验收，仍由服务端限定本人和项目范围。
+ if(tab==='all')return [{type:'and',terms:[{type:'and',terms:staffTerms('inspection')},{type:'or',terms:staffTerms('acceptance')}]}]
  if(tab==='acceptance')return [{column:'kind',termType:'in',value:['firstAcceptance','secondAcceptance']},{column:'status',termType:'eq',value:'pending'}]
  return [{type:'and',terms:[{column:'kind',termType:'eq',value:'daily'},{column:'status',termType:'eq',value:'pending'},{type:'or',terms:[{column:'kind',termType:'eq',value:'inspectionRecord'},{column:'status',termType:'eq',value:'waiting_review'}]}]}]
 }

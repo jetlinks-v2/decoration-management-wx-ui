@@ -81,7 +81,7 @@ export function useLogin() {
           { scoped: false, signal: attempt.signal, verification: completed.verification })
       }
       if (!result.token) throw new MobileError(502, 'Mobile.requestFailed')
-      const session = { token: result.token, applicationId: authState.config.applicationId, tenantDomain: '' }
+      const session = { token: result.token, applicationId: authState.config.applicationId, tenantDomain: authState.config.tenantDomain || '' }
       // 应用权限验证通过后才保存 token，避免未授权会话短暂进入业务页。
       const authorization = await verifySession(session, attempt.signal)
       if (attempt.signal.aborted) throw new MobileError(400, 'Mobile.loginCancelled')

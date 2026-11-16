@@ -34,11 +34,13 @@ const confirmDiscard=useDiscardConfirm(()=> '当前有尚未提交的内容，�
 const blocked=()=>!!(form.value?.saving||form.value?.uncertain||detail.value?.saving||detail.value?.uncertain)
 const dirty=()=>!!(form.value?.dirty||detail.value?.dirty)
 async function canLeave(){if(blocked())return false;return !dirty()||await confirmDiscard()&&!blocked()}
-const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty(),props.entrySearch)
+const {api,permissions,projectId,projects,houses,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,staffTaskTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}=useMobileDecoration(canLeave,side,()=>blocked()||dirty(),props.entrySearch)
 const scrollTop=inject('business-scroll-top',()=>{})
 watch([view,detailId,taskId,detailStep],scrollTop,{flush:'post'})
 if(inShell())useShellNavigation('/applications/decoration-app',()=>!['list','history','notifications'].includes(view.value),()=>back(false),canLeave)
-const title=computed(()=>view.value==='create'?'装修申请':view.value==='notifications'?t('Mobile.decorationNotifications'):view.value==='history'?t('Mobile.decorationRecords'):view.value==='workflow'?t('Mobile.workflowTitle'):view.value==='detail'?side==='staff'?'任务办理':detailStep.value==='rectification'?'巡检整改':ownerSteps().find(s=>s.key===detailStep.value)?.title||'装修详情':side==='owner'?t('Mobile.myDecoration'):'装修工作台')
+const title=computed(()=>view.value==='create'?'装修申请':view.value==='notifications'?t('Mobile.decorationNotifications'):view.value==='history'?t('Mobile.decorationRecords'):view.value==='workflow'?t('Mobile.workflowTitle'):view.value==='detail'?side==='staff'?'任务办理':detailStep.value==='rectification'?'巡检整改':ownerSteps().find(s=>s.key===detailStep.value)?.title||'装修详情':side==='owner'?t('Mobile.myDecoration'):staffTab.value==='history'?t('Mobile.staffHistory'):staffTab.value==='notifications'?t('Mobile.decorationNotifications'):t('Mobile.myTasks'))
+const staffRoot=computed(()=>side==='staff'&&view.value==='list')
+const staffTasksActive=computed(()=>staffTab.value!=='history'&&staffTab.value!=='notifications')
 const ownerRoot=computed(()=>side==='owner'&&['list','history','notifications'].includes(view.value))
 const houseOptions=computed(()=>houses.value.map(home=>({value:home.household.relationshipId,label:`${home.projectName} / ${home.household.spaceName}`})))
 function openStep(step:OwnerStep){const id=current.value?.id||detailId.value;if(id)navigate('detail',id,step);else if(step==='apply')navigate('create')}
@@ -48,7 +50,7 @@ async function refresh(){if(await canLeave()){if(view.value==='detail')void deta
 defineExpose({canLeave})
 </script>
 <template>
- <van-config-provider><main class="decoration-mobile" :class="[`mobile-${side}`,{'has-owner-tabs':ownerRoot}]">
+ <van-config-provider><main class="decoration-mobile" :class="[`mobile-${side}`,{'has-owner-tabs':ownerRoot||staffRoot}]">
   <header class="mobile-header" :class="{'owner-home-header':side==='owner'&&view==='list'}">
    <template v-if="side==='owner'&&view==='list'"><HomeOutlined class="owner-header-home" /><SelectField class="owner-header-select" :model-value="householdId||undefined" :options="houseOptions" show-search option-filter-prop="label" clearable :loading="loading" :disabled="invalid||loading||!houses.length" :aria-label="t('Mobile.selectHouse')" :placeholder="t('Mobile.selectHouse')" @update:model-value="value=>changeHouse(typeof value==='string'?value:undefined)" /><van-button v-if="standalone" class="header-action" plain :aria-label="t('Mobile.logout')" :title="t('Mobile.logout')" :loading="loggingOut" @click="signOut"><LogoutOutlined /></van-button><van-button v-else class="header-action" plain :aria-label="t('Mobile.refresh')" @click="refresh"><ReloadOutlined /></van-button></template>
    <template v-else><van-button class="header-action" plain aria-label="返回" @click="back()"><LeftOutlined /></van-button><h1>{{title}}</h1><van-button v-if="!invalid&&view!=='create'" class="header-action" plain aria-label="刷新" @click="refresh"><ReloadOutlined /></van-button><span v-else class="header-spacer" /></template>
@@ -74,6 +76,11 @@ defineExpose({canLeave})
    <van-button plain :class="{active:ownerTab==='list'}" :aria-current="ownerTab==='list'?'page':undefined" @click="view!=='list'&&navigate('list')"><FileAddOutlined /><span>{{t('Mobile.houseApplications')}}</span></van-button>
    <van-button plain :class="{active:ownerTab==='history'}" :aria-current="ownerTab==='history'?'page':undefined" @click="view!=='history'&&navigate('history')"><FileTextOutlined /><span>{{t('Mobile.decorationRecords')}}</span></van-button>
    <van-button plain :class="{active:ownerTab==='notifications'}" :aria-current="ownerTab==='notifications'?'page':undefined" @click="view!=='notifications'&&navigate('notifications')"><BellOutlined /><span>{{t('Mobile.decorationNotifications')}}</span></van-button>
+  </nav>
+  <nav v-if="staffRoot&&!invalid" class="owner-bottom-nav staff-bottom-nav" :aria-label="t('Mobile.staffNavigation')">
+   <van-button plain :class="{active:staffTasksActive}" :aria-current="staffTasksActive?'page':undefined" @click="!staffTasksActive&&changeTab(staffTaskTab)"><FileAddOutlined /><span>{{t('Mobile.myTasks')}}</span></van-button>
+   <van-button plain :class="{active:staffTab==='history'}" :aria-current="staffTab==='history'?'page':undefined" @click="staffTab!=='history'&&changeTab('history')"><FileTextOutlined /><span>{{t('Mobile.staffHistory')}}</span></van-button>
+   <van-button plain :class="{active:staffTab==='notifications'}" :aria-current="staffTab==='notifications'?'page':undefined" @click="staffTab!=='notifications'&&changeTab('notifications')"><BellOutlined /><span>{{t('Mobile.decorationNotifications')}}</span></van-button>
   </nav>
  </main></van-config-provider>
 </template>

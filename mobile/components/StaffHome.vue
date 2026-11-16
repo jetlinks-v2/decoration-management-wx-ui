@@ -6,7 +6,6 @@ import MobileLoading from './ui/MobileLoading.vue'
 
 import { useI18n } from '../i18n'
 const { t } = useI18n()
-import staffScene from '../assets/staff-scene.svg'
 import {RightOutlined,EnvironmentOutlined,ClockCircleOutlined} from './ui/icons'
 import OwnerNotifications from './OwnerNotifications.vue'
 import type {DecorationNotice,Task} from '../../types/decoration'
@@ -15,11 +14,10 @@ defineProps<{tasks:Task[];tab:StaffTab;loading:boolean;total:number;page:number;
 const emit=defineEmits<{tab:[StaffTab];open:[Task];page:[number];notice:[DecorationNotice]}>()
 </script>
 <template>
- <section class="decoration-hero decoration-hero--staff"><div><span class="hero-eyebrow">{{t('Mobile.staffSide')}}</span><h2>{{t('Mobile.staffHeroTitle')}}</h2><p>{{t('Mobile.staffHeroHint')}}</p></div><img :src="staffScene" alt="" width="320" height="240" /></section>
- <div class="staff-tabs" role="tablist"><van-button v-for="item in [{key:'inspection',name:'巡检任务'},{key:'acceptance',name:'验收任务'},{key:'history',name:'历史记录'},{key:'notifications',name:'任务通知'}]" :key="item.key" role="tab" :aria-selected="tab===item.key" :class="{selected:tab===item.key}" @click="emit('tab',item.key as StaffTab)">{{item.name}}</van-button></div>
+ <div v-if="tab!=='history'&&tab!=='notifications'" class="staff-tabs" role="tablist" :aria-label="t('Mobile.taskCategories')"><van-button v-for="item in [{key:'all',name:t('Mobile.allTasks')},{key:'inspection',name:t('Mobile.inspectionTasks')},{key:'acceptance',name:t('Mobile.acceptanceTasks')}]" :key="item.key" role="tab" :aria-selected="tab===item.key" :class="{selected:tab===item.key}" @click="emit('tab',item.key as StaffTab)">{{item.name}}</van-button></div>
  <OwnerNotifications v-if="tab==='notifications'" :rows="notices" :loading="loading" :failed="failed" :page="page" :total="total" staff @open="emit('notice',$event)" @page="emit('page',$event)" />
  <template v-else>
- <div class="mobile-section-heading"><h2>{{tab==='history'?'我的办理记录':'我的待办'}}</h2><span class="muted">{{total}} 项</span></div>
+ <div class="mobile-section-heading"><h2>{{tab==='history'?t('Mobile.staffHistory'):t('Mobile.myTasks')}}</h2><span class="muted">{{t('Mobile.taskCount',{count:total})}}</span></div>
  <MobileLoading :loading="loading"><van-empty v-if="!tasks.length&&!loading" :description="tab==='history'?'暂无办理记录':'当前没有待办任务'" />
   <article v-for="task in tasks" :key="task.id" class="mobile-surface staff-task" role="button" tabindex="0" @click="emit('open',task)" @keydown.enter="emit('open',task)">
    <div class="staff-task-head"><span class="task-kind">{{task.status==='waiting_review'?'整改复核':taskNames[task.kind]}}</span><span class="status-pill" :class="{warning:task.status==='pending'||task.status==='waiting_review'}">{{taskStates[task.status]||task.status}}</span></div>

@@ -63,7 +63,7 @@ test('H5应用登录：原样提交账号，公开认证不携带PC上下文，R
   assert.equal(vm.authState.authorization.user.id, 'employee')
   assert.equal(login.form.password, '')
   await vm.sessionRequest('/decoration/mobile/applications/_query', 'POST', { date: '2026-11-06' }, {})
-  assert.deepEqual(vm.calls.at(-1).options.headers, { 'X-Access-Token': 'h5-token', 'X-Asset-Scope': 'business_application:decoration-app', 'Content-Type': 'application/json' })
+  assert.deepEqual(vm.calls.at(-1).options.headers, { 'X-Access-Token': 'h5-token', 'X-Asset-Scope': 'business_application:decoration-app', 'X-Tenant-Domain': 'CQHT', 'Content-Type': 'application/json' })
   assert.equal(vm.calls.at(-1).options.credentials, 'omit')
 }))
 
@@ -97,6 +97,19 @@ test('401回登录、403保留会话；旧请求不能删除或返回新账号�
   await assert.rejects(vm.sessionRequest('/decoration/mobile/applications/_query'), error => error.status === 401)
   assert.equal(vm.authState.session, undefined)
   assert.equal(vm.stored.size, 0)
+}))
+
+test('部署租户变更不复用旧会话，URL不能覆盖部署租户', () => fixture(async vm => {
+  await vm.initializeConfig()
+  vm.setSession({ token: 'saved-token', applicationId: 'decoration-app', tenantDomain: 'CQHT' })
+  globalThis.location.search = '?applicationScope=decoration-app&tenantDomain=untrusted'
+  vm.respond(() => ({ ok: true, json: async () => ({ ...config, tenantDomain: 'OTHER' }) }))
+  await vm.initializeConfig()
+  assert.equal(vm.authState.config.tenantDomain, 'OTHER')
+  assert.equal(vm.authState.session, undefined)
+  assert.equal(vm.stored.size, 0)
+  vm.respond(() => ({ ok: true, json: async () => ({ ...config, tenantDomain: 'CQHT\r\ninvalid' }) }))
+  await assert.rejects(vm.initializeConfig(), error => error.message === 'Mobile.loginConfigFailed')
 }))
 
 test('加密失败不明文降级，没有应用权限不进入业务页', () => fixture(async vm => {

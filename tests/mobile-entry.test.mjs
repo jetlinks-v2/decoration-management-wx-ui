@@ -110,13 +110,14 @@ test('业主首页仅二验后开放一次性退款，历史已退记录可查�
 function matches(row,terms){let match=true;for(let i=0;i<terms.length;i++){const term=terms[i],actual=term.terms?matches(row,term.terms):term.termType==='in'?term.value.includes(row[term.column]):term.termType==='nin'?!term.value.includes(row[term.column]):term.termType==='not'?row[term.column]!=null&&row[term.column]!==term.value:term.termType==='isnull'?row[term.column]==null:row[term.column]===term.value;match=i===0?actual:term.type==='or'?match||actual:match&&actual}return match}
 test('员工巡检含待办与整改复核，验收只含待办，历史不混入未办理任务',()=>{
  for(const [row,tabs] of [
-  [{kind:'daily',status:'pending'},['inspection']],
+  [{kind:'daily',status:'pending'},['all','inspection']],
   [{kind:'daily',status:'completed'},[]],
-  [{kind:'inspectionRecord',status:'waiting_review'},['inspection']],
-  [{kind:'firstAcceptance',status:'pending'},['acceptance']],
+  [{kind:'inspectionRecord',status:'waiting_review'},['all','inspection']],
+  [{kind:'firstAcceptance',status:'pending'},['all','acceptance']],
+  [{kind:'secondAcceptance',status:'pending'},['all','acceptance']],
   [{kind:'secondAcceptance',status:'passed'},['history']],
   [{kind:'inspectionRecord',status:'owner_rectification'},['history']]
- ])assert.deepEqual(['inspection','acceptance','history'].filter(tab=>matches(row,staffTerms(tab))),tabs)
+ ])assert.deepEqual(['all','inspection','acceptance','history'].filter(tab=>matches(row,staffTerms(tab))),tabs)
 })
 test('首页选房后留在首页，申请带入房屋，记录独立查询本人全部记录',async()=>{
  const source=host(),fallback=source.request,queries=[]
@@ -390,4 +391,29 @@ test('进入新增前房屋撤权时回退首房，但不将申请自动转到�
   await owner.state.navigate('create');assert.equal(owner.state.view.value,'list');assert.equal(owner.state.householdId.value,'one')
   await owner.state.navigate('create');assert.equal(owner.state.view.value,'create')
  }finally{owner.stop()}
+})
+
+
+test('员工默认全部任务，底部导航保留任务分类并重置分页，任务详情返回原分类',async()=>{
+ const source=host(),fallback=source.request,queries=[]
+ source.request=async(path,method,body)=>{
+  if(path.endsWith('/tasks/mine/_query')){queries.push(body);return {data:[],total:12}}
+  return fallback(path,method,body)
+ }
+ const staff=mount('staff',source)
+ try{
+  await flush();assert.equal(staff.state.staffTab.value,'all')
+  assert.ok(matches({kind:'firstAcceptance',status:'pending'},queries.at(-1).terms))
+  assert.ok(matches({kind:'daily',status:'pending'},queries.at(-1).terms))
+  assert.equal(matches({kind:'secondAcceptance',status:'passed'},queries.at(-1).terms),false)
+  await staff.state.changeTab('acceptance');await flush()
+  staff.state.changePage(2);await flush();assert.equal(queries.at(-1).pageIndex,1)
+  await staff.state.changeTab('history');await flush()
+  assert.equal(staff.state.staffTaskTab.value,'acceptance');assert.equal(staff.state.page.value,1)
+  await staff.state.changeTab('notifications');await flush()
+  await staff.state.changeTab(staff.state.staffTaskTab.value);await flush()
+  assert.equal(staff.state.staffTab.value,'acceptance');assert.equal(queries.at(-1).pageIndex,0)
+  await staff.state.navigate('detail','record','overview','first-task');await staff.state.back();await flush()
+  assert.equal(staff.state.view.value,'list');assert.equal(staff.state.staffTab.value,'acceptance')
+ }finally{staff.stop()}
 })

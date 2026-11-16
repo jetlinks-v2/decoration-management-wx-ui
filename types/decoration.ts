@@ -16,10 +16,11 @@ export type ApplicationReviewRow = Pick<Application, 'id'|'projectId'|'number'|'
   materialReview: 'notRequired'|'pending'|'approved'|'rejected'
   drawingReview: 'notRequired'|'pending'|'approved'|'rejected'
 }
+export interface SelfInspectionDefinition { id: string; group: string; groupTitle: string; optionTitle: string; name: string; enabled: boolean; sort: number }
 export interface CheckItem { id: string; category: string; categorySort?: number; name: string; inputType: 'text' | 'number' | 'option' | 'image'; required: boolean; enabled: boolean; standard?: string; min?: number; max?: number; options: string[]; example?: string; exampleFileId?: string; sort: number }
 export interface CheckResult { itemId: string; value?: string; fileIds: string[]; qualified: boolean; rectification?: string; deadline?: number }
 export interface Agreement { title: string; content: string; chargeItemId: string; chargeItemName: string; deposit: number; refundAmount?: number; firstRefund?: number; secondRefund?: number; fees: Record<string, number>; supplements: { name: string; content: string }[] }
-export interface ConfigurationContent { agreement?: Agreement; materials: MaterialDefinition[]; checks: CheckItem[]; validityMonths?: number }
+export interface ConfigurationContent { selfInspectionTemplateFileId?: string; agreement?: Agreement; materials: MaterialDefinition[]; checks: CheckItem[]; validityMonths?: number }
 export type ConfigurationKind = 'agreement' | 'materials' | 'checks' | 'validity'
 export interface Configuration { id?: string; projectId: string; kind: ConfigurationKind; houseType: string; decorationType: string; scene: string; enabled: boolean; version: number; content: ConfigurationContent }
 export interface ConfigurationImportProblem { rowNumber: number; columnName: string; cellValue: string; code: string }
@@ -50,7 +51,7 @@ export interface Employee { id: string; name: string; telephone?: string }
 export interface Receipt { id: string; name: string; size: number; contentType: string }
 export interface MaterialUpload { itemId: string; fileIds: string[] }
 export interface CreateApplication { selfInspectionItems?: SelfInspectionItem[]; signedDocuments?: SignedDocumentInput[]; requestId: string; projectId: string; spaceId: string; customerId: string; contactPhone: string; ownerCertificate?: string; constructionUnit: string; constructionManager: string; managerPhone: string; managerCertificate?: string; constructionType: number; decorationType: string; startTime?: number; completionTime?: number; noticesAccepted: boolean; selfInspectionStatus?: 0 | 1; selfInspectionRemark?: string; selfInspectionFiles: string[]; signatureFiles: string[]; materials: MaterialUpload[] }
-export interface FormConfiguration { household: Household; agreement: Agreement; materials: MaterialDefinition[] }
+export interface FormConfiguration { selfInspectionTemplateFileId?: string; household: Household; agreement: Agreement; materials: MaterialDefinition[]; selfInspections?: SelfInspectionDefinition[] }
 export interface Action { requestId: string; version: number; remark?: string; itemId?: string; result?: number; annotatedFileId?: string; annotationSourceFileId?: string; annotations?: ImageMark[]; amount?: number; materials?: MaterialUpload[]; completionTime?: number; actualEndTime?: number; safetyPerson?: string; safetyPhone?: string; content?: string; entrusted?: boolean; workers?: Worker[]; months?: number; type?: number; acceptanceDate?: number; assigneeIds?: string[]; taskId?: string; passed?: boolean; results?: CheckResult[]; fileIds?: string[]; deadline?: number; violations?: Violation[]; inspectionRoles?: InspectionRole[]; reviewRoleId?: string; startTime?: number; endTime?: number; reference?: string }
 export interface Role { id: string; name: string }
 export interface Capabilities { simulated?: boolean; payment: boolean; refund: boolean; pushNotification: boolean }

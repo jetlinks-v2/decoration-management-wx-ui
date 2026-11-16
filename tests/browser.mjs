@@ -83,7 +83,7 @@ try{
    await page.locator('input[autocomplete=username]').waitFor({state:'detached'});await page.waitForTimeout(150)
    await layout(page,'standalone-'+side,width)
    if(side==='owner')await ownerFlow(page,width,false)
-   else {await page.getByRole('tab',{name:'验收任务',exact:true}).click();await page.getByRole('tab',{name:'历史记录',exact:true}).click()}
+   else {await page.getByRole('tab',{name:'验收任务',exact:true}).click();await page.getByRole('navigation',{name:'装修员工导航'}).getByRole('button',{name:'历史记录',exact:true}).click()}
    assert.deepEqual(errors,[]);await page.close()
   }
   const {page,errors}=await setup(width,true)

@@ -7,6 +7,7 @@ import {errorText} from '../../utils/decoration'
 import {selfInspectionComplete,selfInspectionSnapshot} from '../../utils/selfInspection'
 import {selfInspectionImage} from '../../utils/selfInspectionImage'
 import {materialDocumentImage} from '../../utils/materialDocumentImage'
+import {fixedMaterialDocument} from '../../utils/fixedMaterialDocuments'
 /** 签名和正文合成可下载PNG；正文变化或切换房屋后丢弃过期异步回执。 */
 export function useSignedDocuments(api:DecorationApi,form:CreateApplication,config:()=>FormConfiguration){
  const saving=ref(false),error=ref('');const activity=useUploadActivity();let generation=0,disposed=false
@@ -21,7 +22,7 @@ export function useSignedDocuments(api:DecorationApi,form:CreateApplication,conf
  onScopeDispose(()=>{disposed=true;generation++})
  async function sign(kind:DocumentKind,signatureFileId:string,pages:string[]=[]){
   if(saving.value)return
-  if(kind==='selfInspection'&&!selfInspectionComplete(form.selfInspectionItems)){error.value='请完成全部自检项后签字';return}
+  if(kind==='selfInspection'&&!selfInspectionComplete(form.selfInspectionItems,config().selfInspections)){error.value='请完成全部自检项后签字';return}
   const token=generation,snapshot=content(kind),project=form.projectId,selfSnapshot=kind==='selfInspection'?selfInspectionSnapshot(form,config()):undefined
   saving.value=true;error.value='';const done=activity()
   try{
@@ -30,7 +31,10 @@ export function useSignedDocuments(api:DecorationApi,form:CreateApplication,conf
     const image=new Image();image.src=url;await image.decode()
     let blob:Blob
     if(selfSnapshot)blob=await selfInspectionImage(selfSnapshot,image)
-    else blob=await materialDocumentImage(snapshot,pages,image)
+    else{
+     const item=config().materials.find(item=>kind===`material:${item.id}`)
+     blob=await materialDocumentImage(snapshot,pages,image,item?fixedMaterialDocument(item)?.footer:undefined)
+    }
     if(disposed||token!==generation)return
     const receipt=await api.upload(new File([blob],`${documentTitle(kind,config())}.png`,{type:'image/png'}),project)
     if(disposed||token!==generation)return

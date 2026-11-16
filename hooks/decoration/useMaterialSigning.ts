@@ -13,10 +13,10 @@ export function useMaterialSigning(api:DecorationApi,form:CreateApplication,conf
  const release=()=>{pages.value.forEach(URL.revokeObjectURL);pages.value=[]}
  async function load(){
   const token=++generation;release();loading.value=true;error.value=''
-  try{const urls=await loadMaterialPages(api,item());if(disposed||token!==generation)urls.forEach(URL.revokeObjectURL);else pages.value=urls}
+  try{const urls=await loadMaterialPages(api,item(),{spaceName:configuration().household.spaceName,startTime:form.startTime,completionTime:form.completionTime});if(disposed||token!==generation)urls.forEach(URL.revokeObjectURL);else pages.value=urls}
   catch(e){if(!disposed&&token===generation)error.value=errorText(e)}finally{if(!disposed&&token===generation)loading.value=false}
  }
- watch(()=>[form.projectId,item().id,item().templateFileId],()=>{void load()},{immediate:true})
+ watch(()=>[form.projectId,item().id,item().templateFileId,configuration().household.spaceName,form.startTime,form.completionTime],()=>{void load()},{immediate:true})
  onScopeDispose(()=>{disposed=true;generation++;release()})
  async function sign(signature:string){if(!loading.value&&pages.value.length)await documents.sign(`material:${item().id}`,signature,pages.value)}
  return {pages,loading,error,load,sign,signed,saving:documents.saving,signError:documents.error}

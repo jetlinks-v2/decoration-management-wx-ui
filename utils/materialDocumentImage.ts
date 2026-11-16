@@ -1,5 +1,5 @@
 /** 模板各页与申请信息、手写签字合成原图；限制画布大小以适配移动浏览器。 */
-export async function materialDocumentImage(content:string,pages:string[],signature:HTMLImageElement):Promise<Blob>{
+export async function materialDocumentImage(content:string,pages:string[],signature:HTMLImageElement,footer?:'fireSafety'|'notice'):Promise<Blob>{
  if(!pages.length)throw new Error('请先加载资料模板正文')
  const images=await Promise.all(pages.map(async url=>{const image=new Image();image.src=url;await image.decode();return image}))
  const canvas=document.createElement('canvas');canvas.width=1000
@@ -18,7 +18,17 @@ export async function materialDocumentImage(content:string,pages:string[],signat
  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#202020';ctx.font='22px sans-serif'
  lines.forEach((line,index)=>ctx.fillText(line,60,60+index*34));let y=90+lines.length*34
  images.forEach((image,index)=>{ctx.drawImage(image,(1000-width)/2,y,width,imageHeights[index]!);y+=imageHeights[index]!+20})
- ctx.fillText('业主签字确认：',60,y+55);ctx.drawImage(signature,250,y+10,530,530*signature.naturalHeight/signature.naturalWidth)
- ctx.fillText(`日期：${new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(Date.now())}`,60,canvas.height-45)
+ const date=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(Date.now())
+ if(footer==='notice'){
+  ctx.fillText('客户签章：',60,y+45);ctx.fillText('装修公司签章：',530,y+45)
+  const scale=Math.min(320/signature.naturalWidth,140/signature.naturalHeight)
+  ctx.drawImage(signature,180,y+55,signature.naturalWidth*scale,signature.naturalHeight*scale)
+  ctx.fillText(`日期：${date}`,60,canvas.height-45);ctx.fillText('日期：',530,canvas.height-45)
+ }else{
+  ctx.fillText(footer==='fireSafety'?'承诺单位或个人（签章）：':'业主签字确认：',60,y+45)
+  const scale=Math.min(530/signature.naturalWidth,140/signature.naturalHeight)
+  ctx.drawImage(signature,250,y+55,signature.naturalWidth*scale,signature.naturalHeight*scale)
+  ctx.fillText(`日期：${date}`,60,canvas.height-45)
+ }
  return new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('签字资料图片生成失败')),'image/png'))
 }

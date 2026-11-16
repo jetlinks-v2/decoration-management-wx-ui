@@ -1,4 +1,5 @@
 export const mobileMessages = {
+  myTasks:'我的任务', staffHistory:'历史记录', staffNavigation:'装修员工导航', taskCategories:'任务分类', allTasks:'全部任务', inspectionTasks:'巡检任务', acceptanceTasks:'验收任务', taskCount:'{count} 项',
   myDecoration: '我的装修', houseApplicationsTitle: '房屋装修申请', workflowTitle: '装修流程',
   ownerWelcome: '让装修，更省心', ownerWelcomeHint: '从申请到入住，每一步都安心', continueApplication: '查看办理进度',
   processingApplications: '办理中的装修', noProcessingApplications: '当前房屋暂无办理中的装修，可开始新的申请', processingApplicationUnavailable: '该房屋有在办装修，当前账号暂无可查看的申请，请联系物业核对办理账号。',

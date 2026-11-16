@@ -5,7 +5,7 @@ import {errorText,projectTree,projectTerms} from '../utils/decoration'
 import type {Application,Task,Project,OwnerHouse,OwnerApplicationSummary,DecorationNotice} from '../types/decoration'
 import {transport,resolveContext,host,cancelRequests} from './transport'
 import {mobileNoticeTarget,mobileTaskNoticeTarget,type MobileSide} from '../utils/mobileEntry'
-import {staffTerms,ownerProcessingTerms,type StaffTab,type OwnerStep} from './model'
+import {staffTerms,ownerProcessingTerms,type StaffTab,type StaffTaskTab,type OwnerStep} from './model'
 import {identity} from './session'
 export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:MobileSide='owner',shouldBlockUnload:()=>boolean=()=>false,entrySearch=typeof location==='undefined'?'':location.search){
  const api=createDecorationApi(transport,side==='owner')
@@ -14,7 +14,8 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
  const households=computed(()=>houses.value.map(home=>home.household))
  const house=computed(()=>houses.value.find(home=>home.household.relationshipId===householdId.value))
  const household=computed(()=>house.value?.household)
- const rows=ref<OwnerApplicationSummary[]>([]),taskRows=ref<Task[]>([]),staffTab=ref<StaffTab>('inspection')
+ const rows=ref<OwnerApplicationSummary[]>([]),taskRows=ref<Task[]>([]),staffTab=ref<StaffTab>('all')
+ const staffTaskTab=ref<StaffTaskTab>('all')
  const notices=ref<DecorationNotice[]>([])
  const page=ref(1),total=ref(0),loading=ref(false),error=ref(''),invalid=ref(false)
  const view=ref<'list'|'history'|'notifications'|'workflow'|'create'|'detail'>('list'),detailId=ref(''),taskId=ref(''),detailStep=ref<OwnerStep|'rectification'|'overview'>('overview'),contextKey=ref(0)
@@ -131,7 +132,8 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
   // 选择只查询该房屋的轻量在办摘要，复用已加载房屋，避免重复读取公共档案。
   try{await loadProcessing(token)}catch(e){if(live(token))error.value=errorText(e)}finally{if(live(token))loading.value=false}
  }
- async function changeTab(tab:StaffTab){if(!await canLeave()||disposed||invalid.value)return;staffTab.value=tab;page.value=1;taskRows.value=[];notices.value=[];void load()}
+ /** 底部导航与待办分类分层；从记录、通知回到我的任务时保留上次分类。 */
+ async function changeTab(tab:StaffTab){if(!await canLeave()||disposed||invalid.value)return;staffTab.value=tab;if(tab==='all'||tab==='inspection'||tab==='acceptance')staffTaskTab.value=tab;page.value=1;total.value=0;taskRows.value=[];notices.value=[];void load()}
  function externalProject(event:Event){if(side==='staff')resetProject((event as CustomEvent<string>).detail)}
  function created(row:Application){current.value=row;view.value='workflow';ownerTab.value='list';detailId.value=row.id;detailStep.value='overview';if(!inShell())history.replaceState({},'','#workflow');if(house.value){house.value.applicationCount++;house.value.processing=true}void load()}
  async function applicationChanged(row:Application){
@@ -149,5 +151,5 @@ export function useMobileDecoration(canLeave:()=>boolean|Promise<boolean>,side:M
  const resume=()=>{if(document.visibilityState==='visible')void resolveContext().then(()=>{if(side==='owner'&&view.value==='list'&&!loading.value&&!shouldBlockUnload())void load()}).catch(e=>{error.value=errorText(e)})}
  onMounted(()=>{window.addEventListener('decoration:session-expired',expire);window.addEventListener('decoration:project-changed',externalProject);if(!inShell())window.addEventListener('popstate',pop);window.addEventListener('beforeunload',before);document.addEventListener('visibilitychange',resume);void start()})
  onScopeDispose(()=>{disposed=true;generation++;cancelRequests();window.removeEventListener('decoration:session-expired',expire);window.removeEventListener('decoration:project-changed',externalProject);window.removeEventListener('popstate',pop);window.removeEventListener('beforeunload',before);document.removeEventListener('visibilitychange',resume)})
- return {api,permissions,projectId,projects,houses,house,households,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}
+ return {api,permissions,projectId,projects,houses,house,households,householdId,household,current,rectificationCount,rows,notices,taskRows,staffTab,staffTaskTab,ownerTab,page,total,loading,error,invalid,view,detailId,taskId,detailStep,contextKey,load,start,navigate,back,changeProject,changeHouse,changeTab,created,applicationChanged,changePage}
 }

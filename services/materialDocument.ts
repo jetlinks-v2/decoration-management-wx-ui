@@ -1,26 +1,18 @@
 import type {MaterialDefinition} from '../types/decoration'
 import type {DecorationApi} from './decorationApi'
-import {materialTemplate} from './materialTemplates'
+import {fixedMaterialDocument} from '../utils/fixedMaterialDocuments'
+import {fixedMaterialPages} from '../utils/fixedMaterialPages'
 
-/** 私有模板先认证下载；Word固定模板使用同一原文件渲染的PDF，不能用资料标题代替正文。 */
-export async function loadMaterialPages(api:DecorationApi,item:MaterialDefinition):Promise<string[]>{
- const builtin=materialTemplate(item)
- let blob:Blob
- if(item.templateFileId)blob=await api.download(item.templateFileId)
- else if(builtin){const response=await fetch(builtin.previewUrl);if(!response.ok)throw new Error('资料模板加载失败');blob=await response.blob()}
- else throw new Error('该资料尚未配置模板，请联系物业完善资料模板')
+/** 两份固定资料使用小程序代码模板；自定义资料仍认证读取配置的PDF或图片。 */
+export async function loadMaterialPages(api:DecorationApi,item:MaterialDefinition,location:{spaceName:string;startTime?:number;completionTime?:number}={spaceName:''}):Promise<string[]>{
+ const builtin=fixedMaterialDocument(item)
+ if(builtin)return fixedMaterialPages(builtin,location)
+ if(!item.templateFileId)throw new Error('该资料尚未配置模板，请联系物业完善资料模板')
+ const blob=await api.download(item.templateFileId)
  if(blob.type.startsWith('image/'))return [URL.createObjectURL(blob)]
  const bytes=new Uint8Array(await blob.arrayBuffer())
  if(!(bytes[0]===0x25&&bytes[1]===0x50&&bytes[2]===0x44&&bytes[3]===0x46)){
-  if(!builtin)throw new Error('在线签署模板请使用PDF或图片格式')
-  // 仅原Word正文可复用随包PDF；不能把上传的其他Word文件偷换成旧版正文。
-  if(item.templateFileId){
-   const original=await fetch(builtin.url)
-   if(!original.ok)throw new Error('资料模板加载失败')
-   const originalBytes=new Uint8Array(await original.arrayBuffer())
-   if(bytes.length!==originalBytes.length||!bytes.every((value,index)=>value===originalBytes[index]))throw new Error('该资料模板已变更，请在资料配置中上传对应的PDF或图片后签署')
-  }
-  const response=await fetch(builtin.previewUrl);if(!response.ok)throw new Error('资料模板加载失败');blob=await response.blob()
+  throw new Error('在线签署模板请使用PDF或图片格式')
  }
  const pdfjs=await import('pdfjs-dist')
  const worker=await import('pdfjs-dist/build/pdf.worker.min.mjs?url')

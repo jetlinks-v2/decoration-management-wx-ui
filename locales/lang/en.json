@@ -5,6 +5,14 @@
     "name": "Decoration Management"
   },
   "Decoration": {
+    "applicationHouseType": {
+      "label": "House type",
+      "source": "Read automatically from the property record.",
+      "missing": "Not set. Ask property management to update the property record.",
+      "dictionaryFailed": "House type names could not be loaded. Known types use standard names; retry for other types.",
+      "nameUnavailable": "House type name is unavailable. Ask property management to update the dictionary.",
+      "retry": "Retry"
+    },
     "title": "Decoration management",
     "project": "Project",
     "allProjects": "All authorized projects",

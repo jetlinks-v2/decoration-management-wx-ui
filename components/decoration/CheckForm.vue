@@ -4,12 +4,10 @@ import { Stepper as VanStepper } from 'vant'
 import { RadioGroup as VanRadioGroup } from 'vant'
 import { Radio as VanRadio } from 'vant'
 import SelectField from '../../mobile/components/ui/SelectField.vue'
-import DateField from '../../mobile/components/ui/DateField.vue'
 
 import type { CheckItem, CheckResult } from '../../types/decoration'
 import type { DecorationApi } from '../../services/decorationApi'
 import FilePicker from './FilePicker.vue'
-import dayjs from 'dayjs'
 const props=defineProps<{items:CheckItem[];value:CheckResult[];api:DecorationApi;projectId:string;decorationId:string;readonly?:boolean}>()
 const emit=defineEmits<{'update:value':[CheckResult[]]}>()
 function update(id:string, patch:Partial<CheckResult>){const old=props.value.find(v=>v.itemId===id)||{itemId:id,fileIds:[],qualified:true};emit('update:value',[...props.value.filter(v=>v.itemId!==id),{...old,...patch}])}
@@ -25,8 +23,7 @@ function update(id:string, patch:Partial<CheckResult>){const old=props.value.fin
     <van-field :disabled="readonly" v-else :model-value="value.find(v=>v.itemId===item.id)?.value" @update:model-value="v=>update(item.id,{value:v})" />
     <van-radio-group :disabled="readonly" :model-value="value.find(v=>v.itemId===item.id)?.qualified??true" @update:model-value="v=>update(item.id,{qualified:v})"><van-radio :name="true">合格</van-radio><van-radio :name="false">不合格</van-radio></van-radio-group>
     <template v-if="value.find(v=>v.itemId===item.id)?.qualified===false">
-      <van-field :disabled="readonly" placeholder="整改内容" :model-value="value.find(v=>v.itemId===item.id)?.rectification" @update:model-value="v=>update(item.id,{rectification:v})" />
-      <DateField :disabled="readonly" placeholder="整改截止日期" :model-value="value.find(v=>v.itemId===item.id)?.deadline?dayjs(value.find(v=>v.itemId===item.id)?.deadline):undefined" @update:model-value="v=>update(item.id,{deadline:v?Number(v.valueOf()):undefined})" />
+      <van-field :disabled="readonly" label="整改内容" required type="textarea" autosize :maxlength="2000" placeholder="请填写该检查项的整改内容" :model-value="value.find(v=>v.itemId===item.id)?.rectification" @update:model-value="v=>update(item.id,{rectification:v})" />
     </template>
   </div>
 </template>

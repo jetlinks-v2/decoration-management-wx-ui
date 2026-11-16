@@ -5,6 +5,14 @@
     "name": "装修管理"
   },
   "Decoration": {
+    "applicationHouseType": {
+      "label": "房屋类型",
+      "source": "自动读取基础数据中的房屋档案。",
+      "missing": "未维护，请联系物业完善房屋档案",
+      "dictionaryFailed": "房屋类型字典加载失败，已知类型显示标准名称，其他类型请重试。",
+      "nameUnavailable": "房屋类型名称暂不可用，请联系物业完善字典",
+      "retry": "重试"
+    },
     "title": "装修管理",
     "project": "项目",
     "allProjects": "全部有权项目",
