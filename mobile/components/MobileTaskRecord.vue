@@ -76,7 +76,7 @@ defineExpose({dirty})
    <BusinessField v-if="mode!=='review'" :label="mode==='rectification'?'整改照片':'现场照片'"><FilePicker v-model:value="photoIds" :api="api" :project-id="row.projectId" :decoration-id="row.id" accept=".jpg,.jpeg,.png,.webp,.heic,.gif,.bmp" :readonly="busy" /></BusinessField>
    <BusinessField v-if="mode!=='review'" label="附件"><FilePicker v-model:value="form.fileIds" :api="api" :project-id="row.projectId" :decoration-id="row.id" :readonly="busy" /></BusinessField>
    <BusinessField v-if="mode==='feedback'" label="检查结果"><span :class="hasFailedChecks?'warning-text':''">{{hasFailedChecks?'不通过':'通过'}}</span></BusinessField>
-   <MobileNotice v-if="error" type="error" :message="error" show-icon />
+   <MobileNotice v-if="error" type="error" v-model:message="error" show-icon />
   </section>
   <div class="mobile-bottom-actions"><van-button block type="primary" size="large" native-type="submit" :loading="busy">{{mode==='rectification'?'提交整改，申请复核':mode==='feedback'&&task.kind==='daily'&&!form.passed?'提交并下发业主整改':'确认提交'}}</van-button></div>
  </BusinessForm>

@@ -13,7 +13,7 @@ const vm=useAttachmentPreview(props,()=>container.value)
 <template>
   <div class="file-preview">
     <MobileLoading :loading="vm.loading.value">
-      <MobileNotice v-if="vm.error.value" type="warning" :message="vm.error.value" show-icon />
+      <MobileNotice v-if="vm.error.value" type="warning" floating :message="vm.error.value" show-icon />
       <p class="filename">{{vm.name.value}}</p>
       <img v-if="vm.url.value&&vm.kind.value!=='pdf'" class="preview-image" :src="vm.url.value" :alt="vm.name.value" />
       <iframe v-if="vm.url.value&&vm.kind.value==='pdf'" :src="vm.url.value" :title="vm.name.value" class="pdf-preview" />

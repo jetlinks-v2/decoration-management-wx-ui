@@ -18,7 +18,7 @@ defineExpose({dirty,saving:busy,uncertain,reload:load})
 </script>
 <template>
  <MobileLoading :loading="loading">
-  <MobileNotice v-if="error" type="error" :message="error" show-icon><template #action><van-button :disabled="busy" @click="load">重试</van-button></template></MobileNotice>
+  <MobileNotice v-if="error" type="error" v-model:message="error" show-icon><template #action><van-button :disabled="busy" @click="load">重试</van-button></template></MobileNotice>
   <MobileNotice v-if="uncertain" type="warning" message="办理结果待确认，请先核对结果。"><template #action><van-button :loading="saving" @click="confirm">核对结果</van-button><van-button v-if="resultMissing" :loading="saving" @click="retryOriginal">重试原操作</van-button></template></MobileNotice>
   <template v-if="row"><section class="mobile-surface"><span class="current-pill">{{row.projectName}}</span><h2 class="detail-house-name">{{row.spaceName}}</h2><dl><dt>业主</dt><dd>{{row.ownerName}}</dd><dt>联系电话</dt><dd><a :href="`tel:${row.contactPhone}`">{{row.contactPhone}}</a></dd><dt>施工负责人</dt><dd>{{row.details.constructionManager}}</dd><dt>负责人电话</dt><dd><a :href="`tel:${row.details.managerPhone}`">{{row.details.managerPhone}}</a></dd></dl></section>
    <MobileTaskRecord v-if="tasks[0]" :key="tasks[0].id" ref="editor" :task="tasks[0]" :row="row" :api="api" :busy="busy" :can-handle="permissions.handle" :can-review="permissions.taskReview" @action="submit" />

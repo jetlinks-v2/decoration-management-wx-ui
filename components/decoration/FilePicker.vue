@@ -34,7 +34,7 @@ const { uploading, error, previewId, thumbnails, upload, preview, download, remo
       <van-button :loading="uploading" :disabled="!projectId || uploading" @click="input?.click()">上传文件</van-button>
       <small>单个文件最大20MB</small>
     </div>
-    <MobileNotice v-if="error" type="error" :message="error" show-icon />
+    <MobileNotice v-if="error" type="error" v-model:message="error" show-icon />
     <MobilePopup :show="!!previewId" title="查看附件" :width="1000" :footer="null" destroy-on-close @close="previewId=''">
       <FilePreview v-if="previewId" :key="previewId" :id="previewId" :api="api" />
     </MobilePopup>

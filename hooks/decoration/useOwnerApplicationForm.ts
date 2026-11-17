@@ -21,7 +21,7 @@ export function useOwnerApplicationForm(api:DecorationApi,household:()=>Househol
  function next(){
   if(busy.value||uncertain.value||!configuration.value)return
   if(step.value===0){
-   if(!form.contactPhone||!form.constructionUnit||!form.constructionManager||!form.managerPhone||!form.startTime||!form.completionTime||!form.noticesAccepted){error.value='请填写申请信息并确认装修须知与协议';return}
+   if(!form.contactPhone||!form.startTime||!form.completionTime||!form.noticesAccepted){error.value='请填写申请信息并确认装修须知与协议';return}
    const contact=applicationContactError(form);if(contact){error.value=contact;return}
    if(form.completionTime<form.startTime){error.value='计划竣工日期不能早于开工日期';return}
   }

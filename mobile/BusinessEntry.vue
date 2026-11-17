@@ -17,7 +17,7 @@ async function switchSide(){if(await app.value?.canLeave())switchIdentity()}
 </script>
 <template>
  <MobileLoading v-if="loading" text="正在识别装修身份" />
- <section v-else-if="error" class="identity-error"><MobileNotice type="error" :message="error" /><van-button @click="load">重新加载</van-button><van-button v-if="standalone" @click="emit('logout')">退出登录</van-button></section>
+ <section v-else-if="error" class="identity-error"><MobileNotice type="error" inline :message="error" /><van-button @click="load">重新加载</van-button><van-button v-if="standalone" @click="emit('logout')">退出登录</van-button></section>
  <template v-else-if="selected">
   <App :key="selected" ref="app" :side="selected" :entry-search="entrySearch" :standalone="standalone" :logging-out="loggingOut" @logout="emit('logout')">
    <template v-if="roles.length>1" #identity><div class="identity-toolbar"><span>当前身份：{{selected==='owner'?'业主':'员工'}}</span><van-button plain size="small" @click="switchSide">切换身份</van-button></div></template>

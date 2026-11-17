@@ -46,3 +46,5 @@ PC下载模板使用用户提供的消防安全承诺书和装修告知书Word�
 通知响应保留原字段，并增加 `side`（owner/staff）及可选 `taskId`。独立入口使用 `applicationScope`、`side`、`decorationId`、`step` 和可选 `taskId` 定位。业主整改 `step=rectification`；员工任务 `step=task` 且必须有 `taskId`。所有详情及操作仍由后端重新授权，链接不带凭据。
 
 APP 消息点击时，宿主按通知 `detail.applicationId` 选择真实应用，将 `side/decorationId/step/taskId` 转换为本模块 `owner` 或 `staff` 路由的 query；模块读取该路由 query，不读取宿主外层网页的 URL。公共站内信 detail 包含 `applicationId/decorationId/side/step/taskId/url`（taskId仅任务通知存在）。APP 系统推送、角标及宿主消息中心跳转由宿主接入负责；站内信和本模块列表可用不等同于手机已收到系统推送。
+
+装修申请选择“自装”时不展示、不要求施工单位、施工负责人及其电话和身份证号码，切换为自装会清空这些字段；选择“装修公司”仍须完整填写。业主本人联系电话和身份证号码始终按原规则填写及校验。

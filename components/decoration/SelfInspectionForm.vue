@@ -24,7 +24,7 @@ const groups=computed(()=>selfInspectionGroupsFor(props.configuration.selfInspec
    <tbody><tr v-for="item in group.items" :key="item.key"><th scope="row">{{item.text}}</th><td><van-radio-group :model-value="form.selfInspectionItems?.find(value=>value.key===item.key)?.value" :disabled="disabled||saving" :aria-label="`${item.text} · ${group.optionTitle}`" @update:model-value="value=>updateSelfInspection(item.key,value)"><van-radio :name="true">是</van-radio><van-radio :name="false">否</van-radio></van-radio-group></td></tr></tbody>
   </table>
   <div class="self-inspection-signature"><h4>业主签字确认</h4><p>确认签名后保存包含全部自检项与签字的自检表图片。修改自检项或联系电话后须重新签字。</p>
-   <MobileNotice v-if="error" :message="error" type="error" show-icon />
+   <MobileNotice v-if="error" v-model:message="error" type="error" show-icon />
    <MobileNotice v-if="selfDocument" message="自检表已签署并保存" type="success" show-icon />
    <FilePicker v-if="selfDocument" :value="[selfDocument.documentFileId]" :api="api" :project-id="form.projectId" readonly label="查看或下载签字自检表" />
    <SignaturePad v-if="!saving" :key="`${form.projectId}:${form.spaceId}:${form.customerId}`" :api="api" :project-id="form.projectId" :disabled="disabled" @saved="id=>sign('selfInspection',id)" />

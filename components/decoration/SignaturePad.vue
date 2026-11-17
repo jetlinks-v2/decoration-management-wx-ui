@@ -15,7 +15,7 @@ const {start, move, end, clear, save, saving, error, signed} = useSignature(canv
   <div class="signature-pad">
     <canvas ref="canvas" width="640" height="240" aria-label="请在此签名" @pointerdown="start" @pointermove="move" @pointerup="end" @pointercancel="end" />
     <van-space><van-button :disabled="saving||disabled" @click="clear">清除</van-button><van-button :loading="saving" :disabled="!signed||disabled" @click="save">确认签名</van-button></van-space>
-    <MobileNotice v-if="error" type="error" :message="error" />
+    <MobileNotice v-if="error" type="error" v-model:message="error" />
   </div>
 </template>
 <style scoped>

@@ -40,3 +40,42 @@ test('旧配置响应晚到不能覆盖切换后房屋类型',async()=>{
   assert.equal(state.selectedHousehold.value.houseType,'office')
  }finally{scope.stop()}
 })
+
+
+test('自装不要求施工方资料，装修公司仍必填；切换自装清空公司信息后可提交',async()=>{
+ const scope=effectScope(),submitted=[];let state
+ const api={mine:false,households:async()=>[house('first','residential')],form:async()=>({household:house('first','residential'),materials:[],selfInspections:[]}),create:async row=>{submitted.push(JSON.parse(JSON.stringify(row)));return {id:'created'}}}
+ scope.run(()=>state=module.exports.useApplicationForm(api,()=> 'p',()=>{}))
+ try{
+  await flush();state.selected.value='first';await flush()
+  Object.assign(state.form,{contactPhone:'13800000000',ownerCertificate:'11010519491231002X',startTime:1,completionTime:2,noticesAccepted:true,selfInspectionFiles:['signed-form']})
+  await state.submit();assert.equal(submitted.length,0);assert.match(state.error.value,/施工单位/)
+  Object.assign(state.form,{constructionUnit:'公司',constructionManager:'负责人',managerPhone:'13900000000',managerCertificate:'11010519491231002X'})
+  state.form.constructionType=2
+  for(const key of ['constructionUnit','constructionManager','managerPhone','managerCertificate'])assert.equal(state.form[key],'')
+  await state.submit();assert.equal(submitted.length,1);assert.equal(submitted[0].constructionType,2)
+  state.form.constructionType=1
+  await state.submit();assert.equal(submitted.length,1);assert.match(state.error.value,/施工单位/)
+  Object.assign(state.form,{constructionUnit:'公司',constructionManager:'负责人',managerPhone:'13900000000',managerCertificate:'11010519491231002X'})
+  await state.submit();assert.equal(submitted.length,2);assert.equal(submitted[1].constructionManager,'负责人')
+ }finally{scope.stop()}
+})
+
+
+test('业主H5选择自装后无需施工方信息即可进入装修自检，切回装修公司会要求补齐',async()=>{
+ const output=await build({entryPoints:[fileURLToPath(new URL('../hooks/decoration/useOwnerApplicationForm.ts',import.meta.url))],bundle:true,write:false,platform:'node',format:'cjs',external:['vue'],plugins:[{name:'owner-upload-context',setup(builder){
+  builder.onResolve({filter:/useUploadScope$/},()=>({path:'upload',namespace:'test-context'}))
+  builder.onLoad({filter:/.*/,namespace:'test-context'},()=>({contents:'import {ref} from "vue";export const provideUploadScope=()=>({uploading:ref(false)})'}))
+ }}]})
+ const loaded={exports:{}};new Function('require','module','exports',output.outputFiles[0].text)(createRequire(import.meta.url),loaded,loaded.exports)
+ const scope=effectScope(),home=house('first','residential');let state
+ const api={mine:true,households:async()=>[home],form:async()=>({household:home,materials:[],selfInspections:[]})}
+ scope.run(()=>state=loaded.exports.useOwnerApplicationForm(api,()=>home,()=>{}))
+ try{
+  await flush()
+  Object.assign(state.form,{contactPhone:'13800000000',ownerCertificate:'11010519491231002X',startTime:1,completionTime:2,noticesAccepted:true,constructionType:2})
+  state.next();assert.equal(state.step.value,1);assert.equal(state.error.value,'')
+  state.back();state.form.constructionType=1;state.next()
+  assert.equal(state.step.value,0);assert.match(state.error.value,/施工单位/)
+ }finally{scope.stop()}
+})

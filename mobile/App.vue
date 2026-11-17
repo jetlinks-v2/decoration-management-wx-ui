@@ -58,7 +58,7 @@ defineExpose({canLeave})
   <slot name="identity" />
   <div class="mobile-content">
    <div v-if="standalone&&!ownerRoot" class="mobile-account"><span>{{side==='staff'?'员工端':'业主端'}}</span><van-button plain size="small" :loading="loggingOut" @click="signOut"><LogoutOutlined />退出登录</van-button></div>
-   <MobileNotice v-if="error" type="error" :message="error" show-icon><template #action><van-button v-if="!invalid" @click="start">重试</van-button></template></MobileNotice>
+   <MobileNotice v-if="error" type="error" inline :message="error" show-icon><template #action><van-button v-if="!invalid" @click="start">重试</van-button></template></MobileNotice>
    <template v-if="!invalid">
     <div v-if="view==='list'&&side==='staff'" class="mobile-project"><HomeOutlined /><ProjectTreeSelect :value="projectId||undefined" :tree-data="projects" :allow-clear="true" :disabled="loading" placeholder="全部有权项目" @update:value="changeProject" /></div>
     <OwnerHome v-if="view==='list'&&side==='owner'" :houses="houses" :selected-id="householdId" :loading="loading" :failed="!!error" :rows="rows" :page="page" :total="total" @apply="navigate('create')" @refresh="refresh" @open="id=>navigate('workflow',id)" @page="changePage" />

@@ -19,7 +19,7 @@ const period=computed(()=>[props.form.startTime,props.form.completionTime].map(t
  <section class="material-signing">
   <h3>{{item.name}} <small>{{signed?'已签署':'待签署'}}</small></h3>
   <p>请阅读以下资料正文，核对申请信息后在文末签字。</p>
-  <MobileNotice v-if="error" type="error" :message="error" show-icon><template #action><van-button @click="load">重试</van-button></template></MobileNotice>
+  <MobileNotice v-if="error" type="error" v-model:message="error" show-icon><template #action><van-button @click="load">重试</van-button></template></MobileNotice>
   <MobileLoading :loading="loading">
    <article v-if="fixed" class="fixed-material-document">
     <h3>{{fixed.title}}</h3>
@@ -32,7 +32,7 @@ const period=computed(()=>[props.form.startTime,props.form.completionTime].map(t
    </article>
    <div v-else class="material-template-pages"><img v-for="(url,index) in pages" :key="url" :src="url" :alt="`${item.name} 第${index+1}页`" /></div>
   </MobileLoading>
-  <MobileNotice v-if="signError" type="error" :message="signError" show-icon />
+  <MobileNotice v-if="signError" type="error" v-model:message="signError" show-icon />
   <FilePicker v-if="signed" :api="api" :value="[signed.documentFileId]" :project-id="form.projectId" readonly :label="`查看签字后的${item.name}`" />
   <h4>{{fixed?.signatureLabel||'业主签字确认'}}</h4>
   <SignaturePad v-if="pages.length&&!saving" :api="api" :project-id="form.projectId" :disabled="disabled||loading" @saved="sign" />

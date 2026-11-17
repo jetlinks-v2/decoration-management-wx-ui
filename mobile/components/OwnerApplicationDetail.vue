@@ -44,7 +44,7 @@ defineExpose({dirty,saving:busy,uncertain,reload:load})
 </script>
 <template>
  <MobileLoading :loading="loading">
-  <MobileNotice v-if="error" type="error" :message="error" show-icon><template #action><van-button :disabled="busy" @click="load">重试</van-button></template></MobileNotice>
+  <MobileNotice v-if="error" type="error" v-model:message="error" show-icon><template #action><van-button :disabled="busy" @click="load">重试</van-button></template></MobileNotice>
   <MobileNotice v-if="uncertain" type="warning" message="办理结果待确认，请先核对结果。"><template #action><van-button :loading="saving" @click="settle(confirm)">核对结果</van-button><van-button v-if="resultMissing" :loading="saving" @click="settle(retryOriginal)">重试原操作</van-button></template></MobileNotice>
   <template v-if="row">
    <MobileNotice v-if="nextStep" class="workflow-reminder" :type="nextStep.tone" :message="nextStep.message" show-icon><template v-if="nextStep.step!==step" #action><van-button plain :disabled="busy" @click="emit('step',nextStep.step)">{{nextStep.action}}</van-button></template></MobileNotice>
